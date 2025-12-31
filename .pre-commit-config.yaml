@@ -1,0 +1,19 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+        files: \.(json)$
+
+  - repo: local
+    hooks:
+      - id: validate-plugin-schemas
+        name: Validate plugin schemas
+        entry: python scripts/validate_plugin_schemas.py
+        language: python
+        pass_filenames: false
+        files: (plugin\.json|marketplace\.json)$
+        additional_dependencies: ["jsonschema>=4.0.0"]

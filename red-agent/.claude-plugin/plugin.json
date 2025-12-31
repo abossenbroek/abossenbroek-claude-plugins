@@ -1,4 +1,5 @@
 {
+  "_schema_note": "Schema inferred from official examples and error-driven discovery (2025-12-30). Agents field registers entry-point agents only; coordinator-internal/ contains implementation files used via Task tool.",
   "name": "red-agent",
   "version": "1.0.0",
   "description": "Adversarial red/rainbow team analysis plugin for Claude Code. Finds weaknesses in LLM interactions through systematic probing using a 10x10 attack taxonomy.",

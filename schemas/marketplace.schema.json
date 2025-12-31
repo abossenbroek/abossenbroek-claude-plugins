@@ -1,0 +1,130 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/abossenbroek/abossenbroek-claude-plugins/schemas/marketplace.schema.json",
+  "title": "Claude Code Marketplace Schema",
+  "description": "Schema for marketplace.json - inferred from official Anthropic examples (may be incomplete)",
+  "type": "object",
+  "required": ["name", "owner", "plugins"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference"
+    },
+    "name": {
+      "type": "string",
+      "description": "Marketplace name identifier"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable marketplace description"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version (optional based on examples)"
+    },
+    "owner": {
+      "$ref": "#/definitions/person",
+      "description": "Marketplace owner information"
+    },
+    "plugins": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/pluginEntry"
+      },
+      "description": "List of plugins in this marketplace"
+    }
+  },
+  "definitions": {
+    "person": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        }
+      },
+      "additionalProperties": false
+    },
+    "pluginEntry": {
+      "type": "object",
+      "required": ["name", "source"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Plugin identifier"
+        },
+        "description": {
+          "type": "string",
+          "description": "Plugin description"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "author": {
+          "$ref": "#/definitions/person"
+        },
+        "source": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Relative path to plugin directory"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "enum": ["url", "github"]
+                },
+                "url": {
+                  "type": "string"
+                },
+                "repo": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        "category": {
+          "type": "string",
+          "enum": ["development", "productivity", "security", "learning", "testing", "design", "database", "monitoring", "deployment"],
+          "description": "Plugin category (observed values, may not be exhaustive)"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional tags - validity uncertain, included for flexibility"
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional command list - validity uncertain, included for flexibility"
+        },
+        "strict": {
+          "type": "boolean"
+        },
+        "homepage": {
+          "type": "string",
+          "format": "uri"
+        },
+        "lspServers": {
+          "type": "object",
+          "description": "LSP server configurations"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

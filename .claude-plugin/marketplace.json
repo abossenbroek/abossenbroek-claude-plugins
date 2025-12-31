@@ -1,5 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "_schema_note": "Schema inferred from official Anthropic examples (2025-12-30). Fields may be incomplete. See schemas/ for local validation.",
   "name": "abossenbroek-claude-plugins",
   "description": "Custom Claude Code plugins by abossenbroek",
   "owner": {
@@ -16,7 +17,8 @@
         "email": "abossenbroek@users.noreply.github.com"
       },
       "source": "./red-agent",
-      "category": "security"
+      "category": "security",
+      "tags": ["security", "red-team", "adversarial", "analysis"]
     }
   ]
 }

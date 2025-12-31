@@ -1,0 +1,21 @@
+[project]
+name = "abossenbroek-claude-plugins"
+version = "1.0.0"
+description = "Claude Code plugins with schema validation"
+requires-python = ">=3.10"
+dependencies = [
+    "jsonschema>=4.0.0",
+    "pyyaml>=6.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit>=3.0.0",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
