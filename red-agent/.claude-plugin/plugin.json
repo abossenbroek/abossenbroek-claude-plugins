@@ -1,0 +1,25 @@
+{
+  "name": "red-agent",
+  "version": "1.0.0",
+  "description": "Adversarial red/rainbow team analysis plugin for Claude Code. Finds weaknesses in LLM interactions through systematic probing using a 10x10 attack taxonomy.",
+  "author": "Red Agent Team",
+  "commands": {
+    "redteam": {
+      "description": "Run adversarial red team analysis on conversation or files",
+      "usage": "/redteam [mode] [target]",
+      "examples": [
+        "/redteam",
+        "/redteam quick",
+        "/redteam deep",
+        "/redteam focus:reasoning-flaws",
+        "/redteam standard file:src/auth.py",
+        "/redteam code"
+      ]
+    }
+  },
+  "agents": {
+    "red-team-coordinator": {
+      "description": "Main coordinator for red team analysis (internal use)"
+    }
+  }
+}
