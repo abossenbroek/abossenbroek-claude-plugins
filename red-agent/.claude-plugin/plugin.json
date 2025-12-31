@@ -9,5 +9,6 @@
     "redteam": {
       "source": "./commands/redteam.md"
     }
-  }
+  },
+  "agents": "./agents/"
 }
