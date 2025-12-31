@@ -1,6 +1,8 @@
 {
   "name": "abossenbroek-claude-plugins",
-  "owner": "abossenbroek",
+  "owner": {
+    "name": "abossenbroek"
+  },
   "version": "1.0.0",
   "plugins": [
     {
