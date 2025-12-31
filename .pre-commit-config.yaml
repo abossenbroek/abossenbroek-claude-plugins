@@ -7,6 +7,14 @@ repos:
       - id: check-yaml
       - id: check-json
         files: \.(json)$
+      - id: check-added-large-files
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
 
   - repo: local
     hooks:
@@ -17,3 +25,11 @@ repos:
         pass_filenames: false
         files: (plugin\.json|marketplace\.json)$
         additional_dependencies: ["jsonschema>=4.0.0"]
+
+      - id: check-config-hygiene
+        name: Check config hygiene
+        entry: python scripts/check_config_hygiene.py
+        language: python
+        pass_filenames: false
+        files: (plugin\.json|marketplace\.json)$
+        stages: [pre-commit]

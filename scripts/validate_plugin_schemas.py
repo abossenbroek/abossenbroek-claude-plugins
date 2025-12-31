@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Validate plugin.json and marketplace.json against inferred schemas.
+"""Validate plugin.json and marketplace.json against inferred schemas.
 
 Note: These schemas are inferred from official Anthropic examples and
 error-driven discovery. They may be incomplete or change as Claude Code evolves.
@@ -11,7 +10,6 @@ import sys
 from pathlib import Path
 
 try:
-    import jsonschema
     from jsonschema import Draft7Validator
 except ImportError:
     print("Error: jsonschema not installed. Run: pip install jsonschema")
@@ -21,13 +19,9 @@ except ImportError:
 def load_json(path: Path) -> dict:
     """Load JSON file with error handling."""
     try:
-        with open(path) as f:
-            return json.load(f)
+        return json.loads(path.read_text())
     except json.JSONDecodeError as e:
         print(f"Error: Invalid JSON in {path}: {e}")
-        sys.exit(1)
-    except FileNotFoundError:
-        print(f"Error: File not found: {path}")
         sys.exit(1)
 
 
@@ -37,32 +31,27 @@ def validate_file(file_path: Path, schema_path: Path) -> list[str]:
     schema = load_json(schema_path)
 
     validator = Draft7Validator(schema)
-    errors = list(validator.iter_errors(data))
-
-    return [f"{e.json_path}: {e.message}" for e in errors]
+    return [f"{e.json_path}: {e.message}" for e in validator.iter_errors(data)]
 
 
-def main():
+def main() -> int:
     """Validate all plugin configuration files."""
     repo_root = Path(__file__).parent.parent
     schemas_dir = repo_root / "schemas"
 
-    # Files to validate
-    validations = [
+    validations: list[tuple[Path, Path]] = [
         (
             repo_root / ".claude-plugin" / "marketplace.json",
             schemas_dir / "marketplace.schema.json",
         ),
     ]
 
-    # Find all plugin.json files
-    for plugin_json in repo_root.glob("*/.claude-plugin/plugin.json"):
-        validations.append((
-            plugin_json,
-            schemas_dir / "plugin.schema.json",
-        ))
+    validations.extend(
+        (plugin_json, schemas_dir / "plugin.schema.json")
+        for plugin_json in repo_root.glob("*/.claude-plugin/plugin.json")
+    )
 
-    all_errors = []
+    all_errors: list[tuple[Path, str]] = []
 
     for file_path, schema_path in validations:
         if not file_path.exists():
@@ -75,11 +64,11 @@ def main():
         errors = validate_file(file_path, schema_path)
 
         if errors:
-            all_errors.extend([(file_path, e) for e in errors])
+            all_errors.extend((file_path, e) for e in errors)
             for error in errors:
                 print(f"  ERROR: {error}")
         else:
-            print(f"  OK")
+            print("  OK")
 
     if all_errors:
         print(f"\nValidation failed with {len(all_errors)} error(s)")

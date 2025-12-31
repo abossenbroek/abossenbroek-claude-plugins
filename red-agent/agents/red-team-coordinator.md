@@ -146,6 +146,44 @@ grounding_results:
       notes: "[grounding rationale]"
 ```
 
+## Output Validation (REQUIRED)
+
+After receiving output from each sub-agent, validate the structure before proceeding.
+
+### Validation Rules
+
+**Attacker Output** must have:
+- `attack_results.attack_type` - identifies the attacker
+- `attack_results.findings[]` - list of findings
+- Each finding must have: `id`, `severity`, `title`, `confidence`
+- Each finding SHOULD have: `evidence`, `recommendation`
+- Severity must be: CRITICAL, HIGH, MEDIUM, LOW, or INFO
+- Confidence must be 0.0-1.0 or percentage string
+
+**Grounding Output** must have:
+- `grounding_results.agent` - identifies the grounding agent
+- `grounding_results.assessments[]` - list of assessments
+- Each assessment must have: `finding_id`, `evidence_strength`
+- Each assessment SHOULD have: `adjusted_confidence`, `notes`
+- evidence_strength must be 0.0-1.0
+
+**Context Analysis** must have:
+- `context_analysis.claim_analysis[]` - analyzed claims
+- `context_analysis.risk_surface` - risk assessment
+
+### Validation Actions
+
+If validation FAILS (missing required fields):
+1. Log the validation error
+2. Request re-generation from the sub-agent with specific error
+3. If retry fails, mark as partial and continue
+4. Include validation failures in limitations section
+
+If validation WARNS (missing recommended fields):
+1. Log the warning
+2. Continue processing
+3. Note reduced confidence in final report
+
 ## Error Handling
 
 If a sub-agent fails or returns empty:
