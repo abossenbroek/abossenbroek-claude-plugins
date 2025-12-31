@@ -1,20 +1,22 @@
 {
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "abossenbroek-claude-plugins",
+  "description": "Custom Claude Code plugins by abossenbroek",
   "owner": {
-    "name": "abossenbroek"
+    "name": "abossenbroek",
+    "email": "abossenbroek@users.noreply.github.com"
   },
-  "version": "1.0.0",
   "plugins": [
     {
       "name": "red-agent",
       "version": "1.0.0",
       "description": "Adversarial red/rainbow team analysis plugin for Claude Code. Finds weaknesses in LLM interactions through systematic probing using a 10x10 attack taxonomy.",
       "author": {
-        "name": "Red Agent Team"
+        "name": "Red Agent Team",
+        "email": "abossenbroek@users.noreply.github.com"
       },
       "source": "./red-agent",
-      "commands": ["./red-agent/commands/redteam.md"],
-      "tags": ["security", "red-team", "adversarial", "analysis"]
+      "category": "security"
     }
   ]
 }
