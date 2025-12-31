@@ -16,22 +16,44 @@ except ImportError:
     sys.exit(1)
 
 
+class LoadError(Exception):
+    """Raised when a JSON file cannot be loaded."""
+
+
 def load_json(path: Path) -> dict:
-    """Load JSON file with error handling."""
+    """Load JSON file with error handling.
+
+    Raises:
+        LoadError: If the file cannot be parsed as JSON.
+    """
     try:
         return json.loads(path.read_text())
     except json.JSONDecodeError as e:
-        print(f"Error: Invalid JSON in {path}: {e}")
-        sys.exit(1)
+        msg = f"Invalid JSON in {path}: {e}"
+        raise LoadError(msg) from e
 
 
 def validate_file(file_path: Path, schema_path: Path) -> list[str]:
-    """Validate a JSON file against a schema. Returns list of errors."""
-    data = load_json(file_path)
-    schema = load_json(schema_path)
+    """Validate a JSON file against a schema.
+
+    Returns:
+        List of error messages (empty if valid).
+    """
+    errors: list[str] = []
+
+    try:
+        data = load_json(file_path)
+    except LoadError as e:
+        return [str(e)]
+
+    try:
+        schema = load_json(schema_path)
+    except LoadError as e:
+        return [f"Schema error: {e}"]
 
     validator = Draft7Validator(schema)
-    return [f"{e.json_path}: {e.message}" for e in validator.iter_errors(data)]
+    errors.extend(f"{e.json_path}: {e.message}" for e in validator.iter_errors(data))
+    return errors
 
 
 def main() -> int:

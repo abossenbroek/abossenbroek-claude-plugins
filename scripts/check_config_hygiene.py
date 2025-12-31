@@ -37,12 +37,12 @@ class CheckResult:
         lines: list[str] = []
         if self.errors:
             lines.append(f"ERRORS ({len(self.errors)}):")
-            lines.extend(f"  ✗ {e}" for e in self.errors)
+            lines.extend(f"  [ERROR] {e}" for e in self.errors)
         if self.warnings:
             lines.append(f"WARNINGS ({len(self.warnings)}):")
-            lines.extend(f"  ⚠ {w}" for w in self.warnings)
+            lines.extend(f"  [WARN] {w}" for w in self.warnings)
         if not lines:
-            lines.append("✓ All checks passed")
+            lines.append("[OK] All checks passed")
         return "\n".join(lines)
 
 

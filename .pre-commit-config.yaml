@@ -23,7 +23,8 @@ repos:
         entry: python scripts/validate_plugin_schemas.py
         language: python
         pass_filenames: false
-        files: (plugin\.json|marketplace\.json)$
+        files: \.claude-plugin/(plugin|marketplace)\.json$
+        types: [json]
         additional_dependencies: ["jsonschema>=4.0.0"]
 
       - id: check-config-hygiene
@@ -31,5 +32,6 @@ repos:
         entry: python scripts/check_config_hygiene.py
         language: python
         pass_filenames: false
-        files: (plugin\.json|marketplace\.json)$
+        files: \.claude-plugin/(plugin|marketplace)\.json$
+        types: [json]
         stages: [pre-commit]

@@ -7,6 +7,8 @@ Validates sub-agent outputs during execution to catch:
 - Findings without evidence
 - Grounding results without proper scores
 
+Uses Pydantic models for type-safe validation.
+
 Usage:
     from validate_agent_output import validate_attacker_output
     python validate_agent_output.py --type attacker --input output.yaml
@@ -16,39 +18,23 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from pydantic import ValidationError
+
 try:
     import yaml
 except ImportError:
     print("Error: pyyaml not installed. Run: pip install pyyaml")
     sys.exit(1)
 
-
-SEVERITY_LEVELS = {"CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"}
-CONFIDENCE_LEVELS = {
-    "exploring",
-    "low",
-    "medium",
-    "high",
-    "very_high",
-    "almost_certain",
-    "certain",
-}
-RISK_CATEGORIES = {
-    "reasoning-flaws",
-    "assumption-gaps",
-    "context-manipulation",
-    "authority-exploitation",
-    "information-leakage",
-    "hallucination-risks",
-    "over-confidence",
-    "scope-creep",
-    "dependency-blindness",
-    "temporal-inconsistency",
-}
-
-
-class ValidationError(Exception):
-    """Raised when agent output validation fails."""
+# Import Pydantic models
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from models import (
+    AttackerOutput,
+    ContextAnalysisOutput,
+    GroundingOutput,
+    RedTeamReport,
+    RiskCategoryName,
+)
 
 
 class ValidationResult:
@@ -81,77 +67,90 @@ class ValidationResult:
         return "\n".join(lines)
 
 
-def _validate_finding_required(
-    finding: dict[str, Any],
-    idx: int,
-    result: ValidationResult,
-) -> None:
-    """Validate required fields in a finding."""
-    if "id" not in finding:
-        result.add_error(f"Finding [{idx}]: missing 'id' field")
-    elif not isinstance(finding["id"], str):
-        result.add_error(f"Finding [{idx}]: 'id' must be string")
-
-    if "severity" not in finding:
-        result.add_error(f"Finding [{idx}]: missing 'severity' field")
-    elif finding["severity"] not in SEVERITY_LEVELS:
-        sev = finding["severity"]
-        result.add_error(f"Finding [{idx}]: invalid severity '{sev}'")
-
-    if "title" not in finding:
-        result.add_error(f"Finding [{idx}]: missing 'title' field")
+def _pydantic_errors_to_result(exc: ValidationError) -> ValidationResult:
+    """Convert Pydantic ValidationError to ValidationResult."""
+    result = ValidationResult()
+    for error in exc.errors():
+        loc = ".".join(str(x) for x in error["loc"])
+        msg = error["msg"]
+        result.add_error(f"{loc}: {msg}")
+    return result
 
 
-def _validate_finding_confidence(
-    finding: dict[str, Any],
-    idx: int,
-    result: ValidationResult,
-) -> None:
-    """Validate confidence field in a finding."""
-    if "confidence" not in finding:
-        result.add_error(f"Finding [{idx}]: missing 'confidence' field")
-        return
-
-    conf = finding["confidence"]
-    if isinstance(conf, int | float):
-        if not 0.0 <= conf <= 1.0:
-            result.add_error(
-                f"Finding [{idx}]: confidence {conf} out of range [0.0, 1.0]"
+def _add_attacker_warnings(data: dict[str, Any], result: ValidationResult) -> None:
+    """Add warnings for missing optional fields in attacker output."""
+    attack = data.get("attack_results", {})
+    findings = attack.get("findings", [])
+    if len(findings) == 0:
+        result.add_warning("No findings reported - verify this is intentional")
+    for idx, finding in enumerate(findings):
+        finding_id = finding.get("id", "unknown")
+        if "evidence" not in finding:
+            result.add_warning(
+                f"Finding [{idx}] ({finding_id}): missing 'evidence' field"
             )
-    elif isinstance(conf, str) and not conf.endswith("%"):
-        result.add_warning(
-            f"Finding [{idx}]: confidence '{conf}' should be numeric or %"
-        )
+        if "recommendation" not in finding:
+            result.add_warning(
+                f"Finding [{idx}] ({finding_id}): missing 'recommendation' field"
+            )
+    # Check for unknown risk categories
+    valid_categories = {cat.value for cat in RiskCategoryName}
+    for cat in attack.get("categories_probed", []):
+        if cat not in valid_categories:
+            result.add_warning(f"Unknown risk category: '{cat}'")
 
 
-def _validate_finding_optional(
-    finding: dict[str, Any],
-    idx: int,
+def _add_grounding_warnings(data: dict[str, Any], result: ValidationResult) -> None:
+    """Add warnings for missing optional fields in grounding output."""
+    grounding = data.get("grounding_results", {})
+    for idx, assessment in enumerate(grounding.get("assessments", [])):
+        if "adjusted_confidence" not in assessment:
+            result.add_warning(f"Assessment [{idx}]: missing 'adjusted_confidence'")
+        if "notes" not in assessment:
+            result.add_warning(
+                f"Assessment [{idx}]: missing 'notes' - explain rationale"
+            )
+
+
+def _add_context_warnings(data: dict[str, Any], result: ValidationResult) -> None:
+    """Add warnings for missing optional fields in context output."""
+    analysis = data.get("context_analysis", {})
+    for idx, claim in enumerate(analysis.get("claim_analysis", [])):
+        if "risk_level" not in claim:
+            result.add_warning(f"Claim [{idx}]: missing 'risk_level'")
+
+
+def _add_report_warnings(data: dict[str, Any], result: ValidationResult) -> None:
+    """Add warnings for missing optional fields in report output."""
+    if "limitations" not in data:
+        result.add_warning("Missing 'limitations' section")
+    summary = data.get("executive_summary", "")
+    if len(str(summary)) < 50:
+        result.add_warning("Executive summary seems too short")
+
+
+# Mapping of output types to warning functions
+_WARNING_FUNCS = {
+    "attacker": _add_attacker_warnings,
+    "grounding": _add_grounding_warnings,
+    "context": _add_context_warnings,
+    "report": _add_report_warnings,
+}
+
+
+def _add_warnings_for_missing_optional(
+    data: dict[str, Any],
     result: ValidationResult,
+    output_type: str,
 ) -> None:
-    """Validate optional fields in a finding."""
-    finding_id = finding.get("id", "unknown")
-    if "evidence" not in finding:
-        result.add_warning(f"Finding [{idx}] ({finding_id}): missing 'evidence' field")
-    if "recommendation" not in finding:
-        result.add_warning(
-            f"Finding [{idx}] ({finding_id}): missing 'recommendation' field"
-        )
-
-
-def validate_finding(
-    finding: dict[str, Any],
-    idx: int,
-    result: ValidationResult,
-) -> None:
-    """Validate a single finding entry."""
-    _validate_finding_required(finding, idx, result)
-    _validate_finding_confidence(finding, idx, result)
-    _validate_finding_optional(finding, idx, result)
+    """Add warnings for missing optional fields (not enforced by Pydantic)."""
+    warning_func = _WARNING_FUNCS.get(output_type)
+    if warning_func:
+        warning_func(data, result)
 
 
 def validate_attacker_output(data: dict[str, Any]) -> ValidationResult:
-    """Validate attacker agent output structure.
+    """Validate attacker agent output structure using Pydantic.
 
     Expected format:
     ```yaml
@@ -165,42 +164,18 @@ def validate_attacker_output(data: dict[str, Any]) -> ValidationResult:
           confidence: 0.85
     ```
     """
-    result = ValidationResult()
+    try:
+        AttackerOutput.model_validate(data)
+        result = ValidationResult()
+    except ValidationError as e:
+        result = _pydantic_errors_to_result(e)
 
-    if "attack_results" not in data:
-        result.add_error("Missing 'attack_results' root key")
-        return result
-
-    attack = data["attack_results"]
-
-    if "attack_type" not in attack:
-        result.add_error("Missing 'attack_type' field")
-
-    if "findings" not in attack:
-        result.add_error("Missing 'findings' field")
-        return result
-
-    findings = attack["findings"]
-    if not isinstance(findings, list):
-        result.add_error("'findings' must be a list")
-        return result
-
-    if len(findings) == 0:
-        result.add_warning("No findings reported - verify this is intentional")
-
-    for idx, finding in enumerate(findings):
-        validate_finding(finding, idx, result)
-
-    if "categories_probed" in attack:
-        for cat in attack["categories_probed"]:
-            if cat not in RISK_CATEGORIES:
-                result.add_warning(f"Unknown risk category: '{cat}'")
-
+    _add_warnings_for_missing_optional(data, result, "attacker")
     return result
 
 
 def validate_grounding_output(data: dict[str, Any]) -> ValidationResult:
-    """Validate grounding agent output structure.
+    """Validate grounding agent output structure using Pydantic.
 
     Expected format:
     ```yaml
@@ -213,59 +188,18 @@ def validate_grounding_output(data: dict[str, Any]) -> ValidationResult:
           notes: "..."
     ```
     """
-    result = ValidationResult()
+    try:
+        GroundingOutput.model_validate(data)
+        result = ValidationResult()
+    except ValidationError as e:
+        result = _pydantic_errors_to_result(e)
 
-    if "grounding_results" not in data:
-        result.add_error("Missing 'grounding_results' root key")
-        return result
-
-    grounding = data["grounding_results"]
-
-    if "agent" not in grounding:
-        result.add_error("Missing 'agent' field")
-
-    if "assessments" not in grounding:
-        result.add_error("Missing 'assessments' field")
-        return result
-
-    assessments = grounding["assessments"]
-    if not isinstance(assessments, list):
-        result.add_error("'assessments' must be a list")
-        return result
-
-    for idx, assessment in enumerate(assessments):
-        _validate_assessment(assessment, idx, result)
-
+    _add_warnings_for_missing_optional(data, result, "grounding")
     return result
 
 
-def _validate_assessment(
-    assessment: dict[str, Any],
-    idx: int,
-    result: ValidationResult,
-) -> None:
-    """Validate a single grounding assessment."""
-    if "finding_id" not in assessment:
-        result.add_error(f"Assessment [{idx}]: missing 'finding_id'")
-
-    if "evidence_strength" not in assessment:
-        result.add_error(f"Assessment [{idx}]: missing 'evidence_strength'")
-    else:
-        strength = assessment["evidence_strength"]
-        if isinstance(strength, int | float) and not 0.0 <= strength <= 1.0:
-            result.add_error(
-                f"Assessment [{idx}]: evidence_strength {strength} out of range"
-            )
-
-    if "adjusted_confidence" not in assessment:
-        result.add_warning(f"Assessment [{idx}]: missing 'adjusted_confidence'")
-
-    if "notes" not in assessment:
-        result.add_warning(f"Assessment [{idx}]: missing 'notes' - explain rationale")
-
-
 def validate_context_analysis(data: dict[str, Any]) -> ValidationResult:
-    """Validate context analyzer output structure.
+    """Validate context analyzer output structure using Pydantic.
 
     Expected format:
     ```yaml
@@ -276,35 +210,18 @@ def validate_context_analysis(data: dict[str, Any]) -> ValidationResult:
       risk_surface: {...}
     ```
     """
-    result = ValidationResult()
+    try:
+        ContextAnalysisOutput.model_validate(data)
+        result = ValidationResult()
+    except ValidationError as e:
+        result = _pydantic_errors_to_result(e)
 
-    if "context_analysis" not in data:
-        result.add_error("Missing 'context_analysis' root key")
-        return result
-
-    analysis = data["context_analysis"]
-
-    required_sections = ["claim_analysis", "risk_surface"]
-    for section in required_sections:
-        if section not in analysis:
-            result.add_error(f"Missing required section: '{section}'")
-
-    if "claim_analysis" in analysis:
-        claims = analysis["claim_analysis"]
-        if not isinstance(claims, list):
-            result.add_error("'claim_analysis' must be a list")
-        else:
-            for idx, claim in enumerate(claims):
-                if "claim_id" not in claim:
-                    result.add_error(f"Claim [{idx}]: missing 'claim_id'")
-                if "risk_level" not in claim:
-                    result.add_warning(f"Claim [{idx}]: missing 'risk_level'")
-
+    _add_warnings_for_missing_optional(data, result, "context")
     return result
 
 
 def validate_final_report(data: dict[str, Any]) -> ValidationResult:
-    """Validate final synthesized report structure.
+    """Validate final synthesized report structure using Pydantic.
 
     Expected format:
     ```yaml
@@ -317,29 +234,13 @@ def validate_final_report(data: dict[str, Any]) -> ValidationResult:
       high: [...]
     ```
     """
-    result = ValidationResult()
+    try:
+        RedTeamReport.model_validate(data)
+        result = ValidationResult()
+    except ValidationError as e:
+        result = _pydantic_errors_to_result(e)
 
-    if "executive_summary" not in data:
-        result.add_error("Missing 'executive_summary'")
-    elif len(str(data["executive_summary"])) < 50:
-        result.add_warning("Executive summary seems too short")
-
-    if "risk_overview" not in data:
-        result.add_error("Missing 'risk_overview'")
-    else:
-        overview = data["risk_overview"]
-        if "overall_risk_level" not in overview:
-            result.add_error("Missing 'overall_risk_level' in risk_overview")
-        elif overview["overall_risk_level"] not in SEVERITY_LEVELS:
-            level = overview["overall_risk_level"]
-            result.add_error(f"Invalid overall_risk_level: {level}")
-
-    if "findings" not in data:
-        result.add_error("Missing 'findings' section")
-
-    if "limitations" not in data:
-        result.add_warning("Missing 'limitations' section")
-
+    _add_warnings_for_missing_optional(data, result, "report")
     return result
 
 
