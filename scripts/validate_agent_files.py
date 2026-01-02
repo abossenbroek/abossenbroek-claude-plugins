@@ -60,7 +60,9 @@ def validate_plugin_references(plugin_json: Path) -> list[str]:
                 source = cmd_def["source"]
                 full_path = plugin_dir / source
                 if not full_path.exists():
-                    errors.append(f"Command file not found: {source} (command: {cmd_name})")
+                    errors.append(
+                        f"Command file not found: {source} (command: {cmd_name})"
+                    )
 
     # Validate hooks
     hooks = data.get("hooks")

@@ -85,6 +85,49 @@ class RedTeamReport(BaseModel):
     findings: list[dict[str, Any]] = Field(default_factory=list)
 
 
+class FixOption(BaseModel):
+    """A single fix option for a finding."""
+
+    label: str
+    description: str
+    pros: list[str] = Field(default_factory=list)
+    cons: list[str] = Field(default_factory=list)
+    complexity: str  # LOW, MEDIUM, HIGH
+    affected_components: list[str] = Field(default_factory=list)
+
+    @field_validator("complexity")
+    @classmethod
+    def validate_complexity(cls, v: str) -> str:
+        valid = {"LOW", "MEDIUM", "HIGH"}
+        if v.upper() not in valid:
+            msg = f"Complexity must be LOW, MEDIUM, or HIGH, got: {v}"
+            raise ValueError(msg)
+        return v.upper()
+
+
+class FixPlannerOutput(BaseModel):
+    """Output from fix-planner agent."""
+
+    finding_id: str
+    finding_title: str
+    options: list[FixOption] = Field(min_length=1, max_length=3)
+
+
+class FindingWithFixes(BaseModel):
+    """A finding with its fix options."""
+
+    finding_id: str
+    title: str
+    severity: str
+    options: list[FixOption] = Field(min_length=1, max_length=3)
+
+
+class FixCoordinatorOutput(BaseModel):
+    """Output from fix-coordinator agent."""
+
+    findings_with_fixes: list[FindingWithFixes] = Field(default_factory=list)
+
+
 # ============================================================================
 # Agent Path to Validation Type Mapping
 # ============================================================================
@@ -101,6 +144,8 @@ AGENT_TYPE_MAP = {
     "alternative-explorer": "grounding",
     "calibrator": "grounding",
     "insight-synthesizer": "report",
+    "fix-planner": "fix_planner",
+    "fix-coordinator": "fix_coordinator",
 }
 
 MODEL_MAP = {
@@ -109,6 +154,8 @@ MODEL_MAP = {
     "context": ContextAnalysisOutput,
     "grounding": GroundingOutput,
     "report": RedTeamReport,
+    "fix_planner": FixPlannerOutput,
+    "fix_coordinator": FixCoordinatorOutput,
 }
 
 

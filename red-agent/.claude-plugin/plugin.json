@@ -1,17 +1,21 @@
 {
   "name": "red-agent",
-  "version": "1.1.0",
-  "description": "Adversarial red/rainbow team analysis plugin for Claude Code. Finds weaknesses in LLM interactions through systematic probing using a 10x10 attack taxonomy.",
+  "version": "1.2.0",
+  "description": "Adversarial red/rainbow team analysis plugin for Claude Code. Finds weaknesses in LLM interactions through systematic probing using a 10x10 attack taxonomy. Includes fix planning with interactive selection.",
   "author": {
     "name": "Red Agent Team"
   },
   "commands": {
     "redteam": {
       "source": "./commands/redteam.md"
+    },
+    "redteam-w-fix": {
+      "source": "./commands/red-team-w-fix.md"
     }
   },
   "agents": [
-    "./agents/red-team-coordinator.md"
+    "./agents/red-team-coordinator.md",
+    "./agents/fix-coordinator.md"
   ],
   "hooks": "./hooks/hooks.json"
 }

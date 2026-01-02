@@ -269,3 +269,84 @@ class ContextAnalysisOutput(BaseModel):
     """Root structure for context analysis output."""
 
     context_analysis: ContextAnalysisResults
+
+
+# =============================================================================
+# Fix Planner models
+# =============================================================================
+
+
+# Valid complexity levels for fix options
+FIX_COMPLEXITY_LEVELS = {"LOW", "MEDIUM", "HIGH"}
+
+
+class FixOption(BaseModel):
+    """A single fix option for a finding."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    label: str
+    description: str
+    pros: list[str] = Field(default_factory=list)
+    cons: list[str] = Field(default_factory=list)
+    complexity: str
+    affected_components: list[str] = Field(default_factory=list)
+
+    @field_validator("complexity")
+    @classmethod
+    def validate_complexity(cls, v: str) -> str:
+        """Validate complexity is a known level."""
+        if v.upper() not in FIX_COMPLEXITY_LEVELS:
+            msg = f"Complexity '{v}' must be one of {FIX_COMPLEXITY_LEVELS}"
+            raise ValueError(msg)
+        return v.upper()
+
+
+class FixPlannerOutput(BaseModel):
+    """Output from fix-planner sub-agent."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    finding_id: str
+    finding_title: str
+    options: list[FixOption] = Field(min_length=1, max_length=3)
+
+    @field_validator("finding_id")
+    @classmethod
+    def validate_id_format(cls, v: str) -> str:
+        """Validate finding ID matches XX-NNN or XXX-NNN format."""
+        return validate_finding_id(v)
+
+
+class FindingWithFixes(BaseModel):
+    """A finding with its fix options."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    finding_id: str
+    title: str
+    severity: str
+    options: list[FixOption] = Field(min_length=1, max_length=3)
+
+    @field_validator("finding_id")
+    @classmethod
+    def validate_id_format(cls, v: str) -> str:
+        """Validate finding ID matches XX-NNN or XXX-NNN format."""
+        return validate_finding_id(v)
+
+    @field_validator("severity")
+    @classmethod
+    def validate_severity(cls, v: str) -> str:
+        """Validate severity is a known level."""
+        if v not in ATTACKER_SEVERITY_LEVELS:
+            msg = f"Severity '{v}' must be one of {ATTACKER_SEVERITY_LEVELS}"
+            raise ValueError(msg)
+        return v
+
+
+class FixCoordinatorOutput(BaseModel):
+    """Output from fix-coordinator agent."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    findings_with_fixes: list[FindingWithFixes] = Field(default_factory=list)
