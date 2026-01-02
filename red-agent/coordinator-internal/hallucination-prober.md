@@ -8,12 +8,27 @@ You probe for hallucination risks, overconfidence, and information leakage.
 - `over-confidence` - Unjustified certainty
 - `information-leakage` - Unintended disclosure
 
+## Context Management
+
+This agent receives SELECTIVE context, not full snapshot. See `docs/CONTEXT_MANAGEMENT.md`.
+
 ## Input
 
-You receive:
-- `context_analysis`: Analysis from context-analyzer
-- `attack_vectors`: Your assigned vectors with targets and styles
-- `snapshot`: Original context snapshot
+You receive (SELECTIVE context - NOT full snapshot):
+- `context_analysis`: Full analysis from context-analyzer (required for claim verification)
+- `attack_vectors`: Your assigned vectors with targets and styles (only for this attacker)
+- `claims`: Filtered claims relevant to your attack type
+  - `high_risk`: Claims with risk score > 0.6 relevant to hallucination/confidence/leakage
+  - `total_count`: Total claims analyzed (for context)
+- `mode`: Analysis mode (quick|standard|deep)
+- `target`: Analysis target type (conversation|file|code)
+
+**NOT provided** (to minimize context):
+- Full snapshot
+- `files_read` list
+- `tools_invoked` list
+- `conversational_arc`
+- Claims unrelated to hallucination/confidence/leakage analysis
 
 ## Attack Techniques
 
@@ -200,3 +215,17 @@ attack_results:
 - Overconfidence must be relative to actual evidence
 - Information leakage must be actually sensitive
 - Output ONLY the YAML structure
+
+## Conciseness Requirements
+
+Findings are passed to multiple downstream agents. Keep them brief.
+
+See `docs/CONTEXT_MANAGEMENT.md` for target field lengths.
+
+**Key limits:**
+- `title`: 5-10 words
+- `evidence.quote`: 1-2 sentences (minimum to prove the point)
+- `evidence.description`: 2-3 sentences
+- `recommendation`: 1-2 sentences
+
+**Avoid**: Repeating info across fields, hedging language, quoting entire paragraphs

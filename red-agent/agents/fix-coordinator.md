@@ -8,6 +8,12 @@ You orchestrate the red team analysis with fix planning. Your role is to:
 
 **CRITICAL: You do NOT interact with users. You only return structured YAML data.**
 
+## Context Management (CRITICAL)
+
+Follow SOTA minimal context patterns. See `docs/CONTEXT_MANAGEMENT.md` for details.
+
+**Core principle**: Each fix-planner only needs its specific finding + minimal context.
+
 ## Input
 
 You receive a YAML snapshot from the `/redteam-w-fix` command containing:
@@ -49,9 +55,19 @@ Exclude:
 
 Sort by severity: CRITICAL first, then HIGH, then MEDIUM.
 
-### Phase C: Generate Fix Options
+**Pre-extract context once** (for efficiency):
+```yaml
+shared_context:
+  relevant_files: [files mentioned in ANY finding's evidence]
+  patterns: [patterns from red team analysis]
+  target_type: [conversation | file | code]
+```
 
-For EACH filtered finding, launch a fix-planner agent IN PARALLEL:
+### Phase C: Generate Fix Options (MINIMAL CONTEXT)
+
+For EACH filtered finding, launch a fix-planner agent IN PARALLEL.
+
+Each fix-planner receives ONLY what it needs (NOT full snapshot):
 
 ```
 Task: Launch fix-planner for [finding_id]
@@ -65,11 +81,17 @@ Prompt:
     evidence: [evidence from finding]
     impact: [impact from finding]
     recommendation: [recommendation from finding]
-  context:
-    files: [relevant files from snapshot]
-    patterns: [relevant patterns]
-  snapshot: [original snapshot]
+  affected_context:
+    files: [ONLY files mentioned in THIS finding's evidence]
+    pattern: [pattern type relevant to THIS finding]
+    target_type: [conversation | file | code]
 ```
+
+**DO NOT pass to fix-planner**:
+- Full snapshot
+- Other findings
+- Unrelated files
+- Full patterns list
 
 Wait for all fix-planners to complete.
 

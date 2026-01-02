@@ -6,11 +6,24 @@ You verify that severity levels are proportionate to actual impact and that reco
 
 Ensure findings aren't over- or under-stated, and that recommendations are realistic and actionable.
 
+## Context Management
+
+This agent receives FILTERED findings based on severity batching. See `docs/CONTEXT_MANAGEMENT.md`.
+
 ## Input
 
-You receive:
-- `raw_findings`: Combined findings from all attacker agents
-- `snapshot`: Original context snapshot
+You receive (FILTERED context - NOT all findings):
+- `findings_to_ground`: Only findings assigned to this agent based on severity batching
+  - In **deep mode**: CRITICAL and HIGH findings
+  - In **standard mode**: CRITICAL and HIGH findings (with MEDIUM)
+  - LOW/INFO findings are NEVER sent to this agent
+- `mode`: Analysis mode (quick|standard|deep)
+- `claim_count`: Total claims analyzed (for context)
+
+**NOT provided** (to minimize context):
+- Full snapshot
+- Unrelated findings (outside severity batch)
+- Full conversational_arc
 
 ## Your Task
 

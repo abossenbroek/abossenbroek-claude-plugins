@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/abossenbroek/abossenbroek-claude-plugins/schemas/marketplace.schema.json",
   "title": "Claude Code Marketplace Schema",
-  "description": "Schema for marketplace.json - inferred from official Anthropic examples (may be incomplete)",
+  "description": "Schema for marketplace.json - validated by Claude Code at runtime. See sdk-tools.d.ts in @anthropic-ai/claude-code for tool schemas.",
   "type": "object",
   "required": ["name", "owner", "plugins"],
   "properties": {
@@ -14,9 +14,15 @@
       "type": "string",
       "description": "Marketplace name identifier"
     },
-    "description": {
-      "type": "string",
-      "description": "Human-readable marketplace description"
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Human-readable marketplace description"
+        }
+      },
+      "description": "Marketplace metadata"
     },
     "version": {
       "type": "string",
@@ -95,21 +101,21 @@
         "category": {
           "type": "string",
           "enum": ["development", "productivity", "security", "learning", "testing", "design", "database", "monitoring", "deployment"],
-          "description": "Plugin category (observed values, may not be exhaustive)"
+          "description": "Plugin category"
         },
         "tags": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "description": "Optional tags - validity uncertain, included for flexibility"
+          "description": "Optional tags for plugin discovery"
         },
         "commands": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "description": "Optional command list - validity uncertain, included for flexibility"
+          "description": "Optional command list"
         },
         "strict": {
           "type": "boolean"

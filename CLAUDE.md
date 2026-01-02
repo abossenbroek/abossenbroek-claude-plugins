@@ -37,22 +37,22 @@ Agent output validation MUST use the Pydantic models in `red-agent/models/`. Do 
 
 **Why**: Single source of truth. Manual validation diverges from the schema.
 
-### 5. Hedging in Config Files
+### 5. Validate Against Claude Code Before Push
 
-Every JSON config file MUST include a `_schema_note` field with:
-- What the schema is based on
-- Date of last verification
-- Acknowledgment of uncertainty
+Use `claude plugin validate` to validate schemas against Claude Code's internal validation:
 
-**Example**:
-```json
-{
-  "_schema_note": "Schema inferred from official Anthropic examples (2025-12-30). May be incomplete.",
-  "name": "example"
-}
+```bash
+# Validate a plugin
+claude plugin validate ./red-agent
+
+# Validate marketplace
+claude plugin validate .
+
+# Or run the pre-push hook manually
+uv run python scripts/validate_against_claude_code.py
 ```
 
-**Why**: Claude Code plugin schemas are not officially documented. We must track our assumptions.
+**Why**: This uses Claude Code's actual schema validation, catching issues before push. The pre-push hook runs this automatically.
 
 ---
 
@@ -169,25 +169,31 @@ class TestValidateAttackerOutput:
 | `red-agent/models/` | Pydantic models (source of truth for validation) |
 | `red-agent/scripts/validate_agent_output.py` | Runtime validator for agent outputs |
 | `scripts/validate_plugin_schemas.py` | JSON schema validator for configs |
-| `scripts/check_config_hygiene.py` | Hygiene checks (hedging, emails, etc.) |
+| `scripts/validate_against_claude_code.py` | Claude Code schema validation (pre-push) |
+| `scripts/check_config_hygiene.py` | Hygiene checks (author emails, empty arrays, etc.) |
 
 ---
 
 ## Validation Architecture
 
-### Three Layers of Validation
+### Four Layers of Validation
 
 1. **Pre-commit (Development Time)**
-   - `validate_plugin_schemas.py`: Validates `plugin.json` and `marketplace.json` against JSON schemas
-   - `check_config_hygiene.py`: Checks for hedging notes, author emails, empty arrays
+   - `validate_plugin_schemas.py`: Validates against local JSON schemas
+   - `check_config_hygiene.py`: Checks author emails, empty arrays, schema references
+   - `validate_agent_files.py`: Verifies referenced agent/command files exist
 
-2. **Pydantic Models (Runtime)**
+2. **Pre-push (Claude Code Validation)**
+   - `validate_against_claude_code.py`: Uses `claude plugin validate` for authoritative schema validation
+   - Catches issues that local schemas might miss
+
+3. **Pydantic Models (Runtime)**
    - Located in `red-agent/models/`
    - Used by `validate_agent_output.py` to validate agent outputs
    - Provides type-safe validation with clear error messages
 
-3. **Tests (CI)**
-   - 79 tests covering all validators
+4. **Tests (CI)**
+   - 165+ tests covering all validators
    - Run via `uv run pytest tests/ -v`
 
 ### When to Use Each
@@ -247,7 +253,7 @@ uv run pre-commit run --all-files
 |--------------|--------------|-----------------|
 | Skip pre-commit | Pushes broken code | Always run before commit |
 | Add validation logic outside Pydantic | Creates divergent schemas | Add to `red-agent/models/` |
-| Remove fields from configs without hedging | Absence-of-evidence fallacy | Document removal with `_schema_note` |
+| Guess plugin schema fields | May break on Claude Code update | Test by loading plugin in Claude Code |
 | Use emojis in CLI output | Encoding issues in some terminals | Use ASCII: `[OK]`, `[ERROR]`, `[WARN]` |
 | Call `sys.exit()` in library functions | Prevents error aggregation | Raise exceptions, handle in `main()` |
 | Create tests without negative cases | Only catches "happy path" bugs | Test invalid inputs too |
@@ -275,7 +281,7 @@ Run `uv run pytest` early and often. Tests document expected behavior.
 
 ### 3. Is this a config change?
 
-Add hedging notes explaining the reasoning and date.
+Test by loading the plugin in Claude Code to verify the schema is accepted.
 
 ### 4. Am I adding validation logic?
 
@@ -283,7 +289,7 @@ Use Pydantic models. Never create ad-hoc validation.
 
 ### 5. Am I unsure about a schema field?
 
-Document uncertainty in `_schema_note`. Prefer keeping fields over removing them.
+Check `sdk-tools.d.ts` in the Claude Code package for tool schemas. For plugin/marketplace schemas, test by loading in Claude Code.
 
 ### 6. Could this affect users?
 
@@ -301,14 +307,43 @@ Plugins consist of:
 - `agents/`: Agents launchable via Task tool
 - `skills/`: Reusable skills
 
-### Schema Uncertainty
+### Schema Validation
 
-Claude Code plugin schemas are **not officially documented**. Our schemas in `schemas/` are:
-- Inferred from official Anthropic examples
-- Validated through error-driven discovery
-- Subject to change as Claude Code evolves
+Claude Code provides `claude plugin validate` for pre-push validation:
 
-Always include `_schema_note` fields acknowledging this uncertainty.
+```bash
+# Validate plugin against Claude Code's internal schemas
+claude plugin validate ./red-agent
+
+# Validate marketplace
+claude plugin validate .
+
+# Run pre-push hook manually
+uv run python scripts/validate_against_claude_code.py
+```
+
+**Validation layers:**
+1. **Pre-commit**: Local JSON schema validation (`scripts/validate_plugin_schemas.py`)
+2. **Pre-push**: Claude Code validation (`scripts/validate_against_claude_code.py`)
+3. **Tool schemas**: `sdk-tools.d.ts` in @anthropic-ai/claude-code package
+
+### Schema Discovery
+
+The `sdk-tools.d.ts` file in the Claude Code npm package is auto-generated from internal JSON schemas:
+
+```typescript
+/* This file was automatically generated by json-schema-to-typescript.
+ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file... */
+```
+
+**Location**: `~/.local/share/nvm/*/lib/node_modules/@anthropic-ai/claude-code/sdk-tools.d.ts`
+
+This is the canonical reference for tool input schemas (AskUserQuestion, Bash, etc.). Plugin/marketplace schemas are not exported but are validated by `claude plugin validate`.
+
+**Schema patterns discovered via validation:**
+- Marketplace description: Use `metadata.description`, not top-level `description`
+- Agent paths: Must be `.md` files (directories not supported)
+- Commands: Can be object with `source` property or array of paths
 
 ---
 
@@ -324,12 +359,17 @@ uv run pytest tests/ -v
 # Run pre-commit
 uv run pre-commit run --all-files
 
+# Validate against Claude Code (runs on push)
+uv run python scripts/validate_against_claude_code.py
+# or directly:
+claude plugin validate ./red-agent
+
 # Fix ruff issues
 uv run ruff check --fix . && uv run ruff format .
 
 # Create commit
 git add -A && git commit -m "message"
 
-# Push and create PR
+# Push (triggers pre-push Claude Code validation)
 git push && gh pr create
 ```

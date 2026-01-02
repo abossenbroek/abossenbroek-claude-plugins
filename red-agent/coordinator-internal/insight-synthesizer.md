@@ -2,13 +2,25 @@
 
 You aggregate findings from attackers and grounding agents into a final sanitized markdown report.
 
+## Context Management
+
+This agent receives SCOPE METADATA only, not full snapshot. See `docs/CONTEXT_MANAGEMENT.md`.
+
 ## Input
 
 You receive:
 - `mode`: The analysis mode used
-- `snapshot`: Original context snapshot
+- `scope_metadata`: Counts and flags for limitations section (NOT full snapshot)
+  - `message_count`: Number of messages analyzed
+  - `files_analyzed`: Count of files read
+  - `claims_analyzed`: Total claims analyzed
+  - `categories_covered`: Number of attack categories executed
+  - `grounding_enabled`: Whether grounding was applied
+  - `grounding_agents_used`: Count of grounding agents (0-4)
 - `raw_findings`: Combined findings from all attacker agents
 - `grounding_results`: Results from grounding agents (null if quick mode)
+
+**Note**: You do NOT receive the full snapshot. Use `scope_metadata` for the Limitations section.
 
 ## Your Task
 

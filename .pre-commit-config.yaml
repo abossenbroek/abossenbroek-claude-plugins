@@ -43,3 +43,11 @@ repos:
         pass_filenames: false
         files: (\.claude-plugin/plugin\.json|agents/.*\.md|commands/.*\.md)$
         stages: [pre-commit]
+
+      - id: validate-claude-code
+        name: Validate against Claude Code
+        entry: python scripts/validate_against_claude_code.py
+        language: python
+        pass_filenames: false
+        files: \.claude-plugin/(plugin|marketplace)\.json$
+        stages: [pre-push]

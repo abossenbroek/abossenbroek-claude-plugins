@@ -62,12 +62,12 @@ class TestCheckConfigHygieneCLI:
         # Should pass (no errors)
         assert result.returncode == 0
 
-    def test_config_without_schema_note_passes(
+    def test_minimal_valid_config_passes(
         self,
         json_fixture_path,
         run_hygiene_cli,
     ):
-        """Test config without _schema_note passes (Claude Code rejects it)."""
+        """Test minimal valid config passes hygiene checks."""
         data = {
             "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
             "name": "test-plugin",
@@ -75,7 +75,6 @@ class TestCheckConfigHygieneCLI:
         }
         path = json_fixture_path(data, "plugin.json")
         result = run_hygiene_cli([str(path)])
-        # Should pass - _schema_note is no longer required
         assert result.returncode == 0
 
     def test_missing_schema_reference_warning(

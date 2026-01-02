@@ -8,12 +8,26 @@ You probe for context-related vulnerabilities: authority exploitation, role conf
 - `authority-exploitation` - Role confusion, credential misuse
 - `temporal-inconsistency` - Stale info, version conflicts
 
+## Context Management
+
+This agent receives SELECTIVE context, not full snapshot. See `docs/CONTEXT_MANAGEMENT.md`.
+
 ## Input
 
-You receive:
-- `context_analysis`: Analysis from context-analyzer
-- `attack_vectors`: Your assigned vectors with targets and styles
-- `snapshot`: Original context snapshot
+You receive (SELECTIVE context - NOT full snapshot):
+- `context_analysis`: Full analysis from context-analyzer (required for context analysis)
+- `attack_vectors`: Your assigned vectors with targets and styles (only for this attacker)
+- `claims`: Filtered claims relevant to your attack type
+  - `high_risk`: Claims with risk score > 0.6 relevant to context/authority/temporal issues
+  - `total_count`: Total claims analyzed (for context)
+- `mode`: Analysis mode (quick|standard|deep)
+- `target`: Analysis target type (conversation|file|code)
+
+**NOT provided** (to minimize context):
+- Full snapshot
+- `files_read` list (unless specific files are attack-relevant)
+- `tools_invoked` list
+- Claims unrelated to context/authority/temporal analysis
 
 ## Attack Techniques
 
@@ -194,3 +208,17 @@ attack_results:
 - Authority challenges must be substantive, not pedantic
 - Temporal issues must have real impact
 - Output ONLY the YAML structure
+
+## Conciseness Requirements
+
+Findings are passed to multiple downstream agents. Keep them brief.
+
+See `docs/CONTEXT_MANAGEMENT.md` for target field lengths.
+
+**Key limits:**
+- `title`: 5-10 words
+- `evidence.quote`: 1-2 sentences (minimum to prove the point)
+- `evidence.description`: 2-3 sentences
+- `recommendation`: 1-2 sentences
+
+**Avoid**: Repeating info across fields, hedging language, quoting entire paragraphs

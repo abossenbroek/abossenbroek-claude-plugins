@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/abossenbroek/abossenbroek-claude-plugins/schemas/plugin.schema.json",
   "title": "Claude Code Plugin Schema",
-  "description": "Schema for plugin.json - inferred from official examples and error-driven discovery (may be incomplete)",
+  "description": "Schema for plugin.json - validated by Claude Code at runtime. See sdk-tools.d.ts in @anthropic-ai/claude-code for tool schemas.",
   "type": "object",
   "required": ["name"],
   "properties": {

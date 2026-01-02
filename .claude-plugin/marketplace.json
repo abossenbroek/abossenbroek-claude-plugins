@@ -1,7 +1,9 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "abossenbroek-claude-plugins",
-  "description": "Custom Claude Code plugins by abossenbroek",
+  "metadata": {
+    "description": "Custom Claude Code plugins by abossenbroek"
+  },
   "owner": {
     "name": "abossenbroek",
     "email": "abossenbroek@users.noreply.github.com"
