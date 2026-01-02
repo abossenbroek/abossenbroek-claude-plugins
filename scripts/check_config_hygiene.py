@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Development checks for config file hygiene.
 
-Catches common red team issues:
-- Missing hedging/uncertainty notes in config files
-- Empirically-determined values without documentation
-- Fields removed without explicit justification
+Checks for common issues:
+- Missing $schema references
+- Author fields without email
+- Empty arrays that may indicate removed content
 
 Usage:
     python check_config_hygiene.py [--strict]
@@ -12,7 +12,6 @@ Usage:
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -45,32 +44,6 @@ class CheckResult:
         if not lines:
             lines.append("[OK] All checks passed")
         return "\n".join(lines)
-
-
-def check_hedging_note(
-    file_path: Path,
-    data: dict,
-    result: CheckResult,
-) -> None:
-    """Check that config files have hedging notes."""
-    rel_path = str(file_path)
-
-    hedging_fields = ["_schema_note", "_note", "_inferred", "_empirical"]
-    has_hedging = any(field in data for field in hedging_fields)
-
-    if not has_hedging:
-        result.add_warning(
-            rel_path,
-            "Missing hedging note (_schema_note). "
-            "Config decisions should document their source.",
-        )
-    else:
-        note = data.get("_schema_note", data.get("_note", ""))
-        if isinstance(note, str) and not re.search(r"\d{4}-\d{2}-\d{2}", note):
-            result.add_warning(
-                rel_path,
-                "Hedging note should include date (e.g., '2025-12-30')",
-            )
 
 
 def check_schema_reference(
@@ -147,7 +120,6 @@ def check_config_file(file_path: Path, result: CheckResult) -> None:
         result.add_error(str(file_path), f"Could not read file: {e}")
         return
 
-    # Note: _schema_note check removed - Claude Code rejects unknown fields
     check_schema_reference(file_path, data, result)
     check_author_email(file_path, data, result)
     check_empty_arrays(file_path, data, result)
