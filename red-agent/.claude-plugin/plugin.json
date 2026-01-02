@@ -10,6 +10,8 @@
       "source": "./commands/redteam.md"
     }
   },
-  "agents": "./agents/",
+  "agents": [
+    "./agents/red-team-coordinator.md"
+  ],
   "hooks": "./hooks/hooks.json"
 }
