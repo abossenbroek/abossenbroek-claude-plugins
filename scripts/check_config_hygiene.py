@@ -147,7 +147,7 @@ def check_config_file(file_path: Path, result: CheckResult) -> None:
         result.add_error(str(file_path), f"Could not read file: {e}")
         return
 
-    check_hedging_note(file_path, data, result)
+    # Note: _schema_note check removed - Claude Code rejects unknown fields
     check_schema_reference(file_path, data, result)
     check_author_email(file_path, data, result)
     check_empty_arrays(file_path, data, result)

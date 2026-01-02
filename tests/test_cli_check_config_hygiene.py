@@ -54,7 +54,6 @@ class TestCheckConfigHygieneCLI:
         """Test valid config passes hygiene checks."""
         data = {
             "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
-            "_schema_note": "Schema inferred from examples (2025-12-30). Incomplete.",
             "name": "test-plugin",
             "version": "1.0.0",
         }
@@ -63,12 +62,12 @@ class TestCheckConfigHygieneCLI:
         # Should pass (no errors)
         assert result.returncode == 0
 
-    def test_missing_hedging_note_warning(
+    def test_config_without_schema_note_passes(
         self,
         json_fixture_path,
         run_hygiene_cli,
     ):
-        """Test missing hedging note produces warning."""
+        """Test config without _schema_note passes (Claude Code rejects it)."""
         data = {
             "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
             "name": "test-plugin",
@@ -76,8 +75,8 @@ class TestCheckConfigHygieneCLI:
         }
         path = json_fixture_path(data, "plugin.json")
         result = run_hygiene_cli([str(path)])
-        # Missing _schema_note is a warning
-        assert "warning" in result.stdout.lower() or "_schema_note" in result.stdout
+        # Should pass - _schema_note is no longer required
+        assert result.returncode == 0
 
     def test_missing_schema_reference_warning(
         self,
@@ -86,7 +85,6 @@ class TestCheckConfigHygieneCLI:
     ):
         """Test missing $schema produces warning."""
         data = {
-            "_schema_note": "Test note 2025-12-30",
             "name": "test-plugin",
             "version": "1.0.0",
         }
@@ -103,7 +101,6 @@ class TestCheckConfigHygieneCLI:
         """Test missing author email produces warning."""
         data = {
             "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
-            "_schema_note": "Test note 2025-12-30",
             "name": "test-plugin",
             "author": {"name": "Test"},  # Has name but missing email
         }
@@ -121,7 +118,6 @@ class TestCheckConfigHygieneCLI:
         """Test empty array produces warning."""
         data = {
             "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
-            "_schema_note": "Test note 2025-12-30",
             "name": "test-plugin",
             "plugins": [],
         }
@@ -149,8 +145,8 @@ class TestCheckConfigHygieneCLI:
     ):
         """Test --strict flag treats warnings as errors."""
         data = {
-            "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
-            "name": "test-plugin",  # Missing _schema_note (warning)
+            # Missing $schema triggers warning
+            "name": "test-plugin",
         }
         path = json_fixture_path(data, "plugin.json")
         result = run_hygiene_cli(["--strict", str(path)])
@@ -164,8 +160,8 @@ class TestCheckConfigHygieneCLI:
     ):
         """Test -s short flag for strict."""
         data = {
-            "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
-            "name": "test-plugin",  # Missing _schema_note (warning)
+            # Missing $schema triggers warning
+            "name": "test-plugin",
         }
         path = json_fixture_path(data, "plugin.json")
         result = run_hygiene_cli(["-s", str(path)])
@@ -179,12 +175,10 @@ class TestCheckConfigHygieneCLI:
         """Test checking multiple files at once."""
         data1 = {
             "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
-            "_schema_note": "Test note 2025-12-30",
             "name": "plugin1",
         }
         data2 = {
             "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-            "_schema_note": "Test note 2025-12-30",
             "name": "marketplace",
         }
         path1 = tmp_path / "plugin1.json"
@@ -198,23 +192,6 @@ class TestCheckConfigHygieneCLI:
 class TestCheckConfigHygieneValidation:
     """Tests for specific validation scenarios."""
 
-    def test_hedging_note_without_date(
-        self,
-        json_fixture_path,
-        run_hygiene_cli,
-    ):
-        """Test hedging note without date still passes (it's about having the note)."""
-        data = {
-            "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
-            "_schema_note": "Schema may be incomplete",
-            "name": "test-plugin",
-        }
-        path = json_fixture_path(data, "plugin.json")
-        result = run_hygiene_cli([str(path)])
-        # Having _schema_note should prevent that warning
-        # But not having a date might produce a different warning
-        assert result.returncode == 0 or "warning" in result.stdout.lower()
-
     def test_nested_empty_array(
         self,
         json_fixture_path,
@@ -223,7 +200,6 @@ class TestCheckConfigHygieneValidation:
         """Test nested empty array produces warning."""
         data = {
             "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
-            "_schema_note": "Test note 2025-12-30",
             "name": "test-plugin",
             "nested": {"items": []},
         }
@@ -240,7 +216,6 @@ class TestCheckConfigHygieneValidation:
         """Test plugins author missing email produces warning."""
         data = {
             "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-            "_schema_note": "Test note 2025-12-30",
             "name": "test-marketplace",
             "plugins": [
                 {"name": "plugin1", "author": {"name": "Test"}}  # Missing email
@@ -259,7 +234,6 @@ class TestCheckConfigHygieneValidation:
         """Test valid non-placeholder email passes."""
         data = {
             "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
-            "_schema_note": "Test note 2025-12-30",
             "name": "test-plugin",
             "author": {"name": "Test", "email": "real@company.com"},
         }
@@ -280,7 +254,6 @@ class TestCheckConfigHygieneOutput:
         """Test output shows number of files being checked."""
         data = {
             "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
-            "_schema_note": "Test note 2025-12-30",
             "name": "test-plugin",
         }
         path = json_fixture_path(data, "plugin.json")
@@ -307,8 +280,7 @@ class TestCheckConfigHygieneOutput:
     ):
         """Test warning output is clearly formatted."""
         data = {
-            "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
-            # Missing _schema_note (warning)
+            # Missing $schema triggers warning
             "name": "test-plugin",
         }
         path = json_fixture_path(data, "plugin.json")

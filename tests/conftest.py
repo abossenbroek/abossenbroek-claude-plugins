@@ -324,7 +324,6 @@ def valid_plugin_json():
     """Valid plugin.json content."""
     return {
         "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
-        "_schema_note": "Test note 2025-12-30",
         "name": "test-plugin",
         "version": "1.0.0",
         "description": "Test plugin description",
@@ -337,7 +336,6 @@ def valid_marketplace_json():
     """Valid marketplace.json content."""
     return {
         "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-        "_schema_note": "Test note 2025-12-30",
         "name": "test-marketplace",
         "description": "Test marketplace",
         "owner": {"name": "Test Owner", "email": "test@example.com"},

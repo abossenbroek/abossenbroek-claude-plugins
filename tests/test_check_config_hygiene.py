@@ -11,7 +11,6 @@ from check_config_hygiene import (
     check_author_email,
     check_config_file,
     check_empty_arrays,
-    check_hedging_note,
     check_schema_reference,
 )
 
@@ -49,46 +48,6 @@ class TestCheckResult:
         assert "✗" not in output
         assert "⚠" not in output
         assert "✓" not in output
-
-
-class TestCheckHedgingNote:
-    """Tests for check_hedging_note function."""
-
-    def test_missing_hedging_note_warning(self, tmp_path):
-        """Test that missing hedging note produces warning."""
-        file_path = tmp_path / "test.json"
-        data = {"name": "test"}
-        result = CheckResult()
-        check_hedging_note(file_path, data, result)
-        assert len(result.warnings) == 1
-        assert "_schema_note" in result.warnings[0]
-
-    def test_present_hedging_note_no_warning(self, tmp_path):
-        """Test that present hedging note produces no warning."""
-        file_path = tmp_path / "test.json"
-        data = {"name": "test", "_schema_note": "Inferred 2025-12-30"}
-        result = CheckResult()
-        check_hedging_note(file_path, data, result)
-        assert len(result.warnings) == 0
-
-    def test_hedging_note_without_date_warning(self, tmp_path):
-        """Test that hedging note without date produces warning."""
-        file_path = tmp_path / "test.json"
-        data = {"name": "test", "_schema_note": "No date here"}
-        result = CheckResult()
-        check_hedging_note(file_path, data, result)
-        assert len(result.warnings) == 1
-        assert "date" in result.warnings[0]
-
-    def test_alternate_hedging_fields(self, tmp_path):
-        """Test that alternate hedging fields are accepted."""
-        file_path = tmp_path / "test.json"
-        for field in ["_note", "_inferred", "_empirical"]:
-            data = {"name": "test", field: "Test 2025-12-30"}
-            result = CheckResult()
-            check_hedging_note(file_path, data, result)
-            # Should only have date warning if applicable, not missing note
-            assert not any("Missing hedging" in w for w in result.warnings)
 
 
 class TestCheckSchemaReference:
@@ -198,7 +157,6 @@ class TestCheckConfigFile:
         file_path = tmp_path / "test.json"
         data = {
             "$schema": "https://example.com/schema.json",
-            "_schema_note": "Test note 2025-12-30",
             "name": "test",
             "author": {"name": "Test", "email": "test@example.com"},
             "items": ["item1"],
