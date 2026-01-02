@@ -21,7 +21,6 @@ from typing import Any
 import yaml
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
-
 # ============================================================================
 # Inline Pydantic Models (subset needed for validation)
 # ============================================================================
