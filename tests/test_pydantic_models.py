@@ -210,14 +210,32 @@ class TestAttackerFindingModel:
     def test_valid_attacker_finding_numeric_confidence(self):
         """Test attacker finding with numeric confidence."""
         finding = AttackerFinding(
-            id="RF-001", severity="HIGH", title="Test", confidence=0.85
+            id="RF-001",
+            severity="HIGH",
+            title="Test",
+            confidence=0.85,
+            category="reasoning-flaws",
+            target={"claim_id": "C-001"},
+            evidence={"type": "logical_gap"},
+            attack_applied={"style": "questioning", "probe": "Test probe"},
+            impact={"if_exploited": "Test impact"},
+            recommendation="Test recommendation text",
         )
         assert finding.confidence == 0.85
 
     def test_valid_attacker_finding_percentage_confidence(self):
         """Test attacker finding with percentage confidence."""
         finding = AttackerFinding(
-            id="RF-001", severity="HIGH", title="Test", confidence="85%"
+            id="RF-001",
+            severity="HIGH",
+            title="Test",
+            confidence="85%",
+            category="reasoning-flaws",
+            target={"claim_id": "C-001"},
+            evidence={"type": "logical_gap"},
+            attack_applied={"style": "questioning", "probe": "Test probe"},
+            impact={"if_exploited": "Test impact"},
+            recommendation="Test recommendation text",
         )
         assert finding.confidence == "85%"
 
@@ -225,8 +243,22 @@ class TestAttackerFindingModel:
         """Test that numeric confidence must be 0-1."""
         with pytest.raises(ValidationError):
             AttackerFinding(
-                id="RF-001", severity="HIGH", title="Test", confidence=2.0
+                id="RF-001",
+                severity="HIGH",
+                title="Test",
+                confidence=2.0,
+                category="reasoning-flaws",
+                target={"claim_id": "C-001"},
+                evidence={"type": "logical_gap"},
+                attack_applied={"style": "questioning", "probe": "Test probe"},
+                impact={"if_exploited": "Test impact"},
+                recommendation="Test recommendation text",
             )
+
+    def test_missing_required_fields(self):
+        """Test that missing required fields are rejected."""
+        with pytest.raises(ValidationError):
+            AttackerFinding(id="RF-001", severity="HIGH", title="Test", confidence=0.85)
 
 
 class TestAttackerOutputModel:
@@ -249,9 +281,22 @@ class TestGroundingAssessmentModel:
     def test_valid_assessment(self):
         """Test creating valid grounding assessment."""
         assessment = GroundingAssessment(
-            finding_id="RF-001", evidence_strength=0.85, adjusted_confidence=0.80
+            finding_id="RF-001",
+            evidence_strength=0.85,
+            original_confidence=0.90,
+            evidence_review={"evidence_exists": True},
+            quote_verification={"match_quality": "exact"},
+            inference_validity={"valid": True},
+            adjusted_confidence=0.80,
         )
         assert assessment.evidence_strength == 0.85
+
+    def test_missing_required_fields(self):
+        """Test that missing required fields are rejected."""
+        with pytest.raises(ValidationError):
+            GroundingAssessment(
+                finding_id="RF-001", evidence_strength=0.85, adjusted_confidence=0.80
+            )
 
 
 class TestGroundingOutputModel:

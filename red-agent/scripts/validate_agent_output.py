@@ -30,6 +30,7 @@ except ImportError:
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from models import (
     AttackerOutput,
+    AttackStrategyOutput,
     ContextAnalysisOutput,
     GroundingOutput,
     RedTeamReport,
@@ -129,12 +130,22 @@ def _add_report_warnings(data: dict[str, Any], result: ValidationResult) -> None
         result.add_warning("Executive summary seems too short")
 
 
+def _add_strategy_warnings(data: dict[str, Any], result: ValidationResult) -> None:
+    """Add warnings for missing optional fields in strategy output."""
+    strategy = data.get("attack_strategy", {})
+    if not strategy.get("selected_vectors"):
+        result.add_warning("No attack vectors selected")
+    if not strategy.get("attacker_assignments"):
+        result.add_warning("No attacker assignments defined")
+
+
 # Mapping of output types to warning functions
 _WARNING_FUNCS = {
     "attacker": _add_attacker_warnings,
     "grounding": _add_grounding_warnings,
     "context": _add_context_warnings,
     "report": _add_report_warnings,
+    "strategy": _add_strategy_warnings,
 }
 
 
@@ -244,6 +255,33 @@ def validate_final_report(data: dict[str, Any]) -> ValidationResult:
     return result
 
 
+def validate_strategy_output(data: dict[str, Any]) -> ValidationResult:
+    """Validate attack strategy output structure using Pydantic.
+
+    Expected format:
+    ```yaml
+    attack_strategy:
+      mode: standard
+      total_vectors: 5
+      selected_vectors:
+        - category: reasoning-flaws
+          priority: 1
+          rationale: "..."
+      attacker_assignments:
+        reasoning-attacker:
+          categories: [reasoning-flaws, assumption-gaps]
+    ```
+    """
+    try:
+        AttackStrategyOutput.model_validate(data)
+        result = ValidationResult()
+    except ValidationError as e:
+        result = _pydantic_errors_to_result(e)
+
+    _add_warnings_for_missing_optional(data, result, "strategy")
+    return result
+
+
 def validate_yaml_string(yaml_str: str, output_type: str) -> ValidationResult:
     """Validate a YAML string based on output type."""
     try:
@@ -261,7 +299,7 @@ def validate_output(data: dict[str, Any], output_type: str) -> ValidationResult:
 
     Args:
         data: Parsed YAML/dict output from agent
-        output_type: One of 'attacker', 'grounding', 'context', 'report'
+        output_type: One of 'attacker', 'grounding', 'context', 'report', 'strategy'
 
     Returns:
         ValidationResult with errors and warnings
@@ -271,6 +309,7 @@ def validate_output(data: dict[str, Any], output_type: str) -> ValidationResult:
         "grounding": validate_grounding_output,
         "context": validate_context_analysis,
         "report": validate_final_report,
+        "strategy": validate_strategy_output,
     }
 
     if output_type not in validators:
@@ -291,7 +330,7 @@ def main() -> int:
         "--type",
         "-t",
         required=True,
-        choices=["attacker", "grounding", "context", "report"],
+        choices=["attacker", "grounding", "context", "report", "strategy"],
         help="Type of output to validate",
     )
     parser.add_argument(

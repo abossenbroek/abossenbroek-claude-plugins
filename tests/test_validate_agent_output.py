@@ -3,8 +3,6 @@
 import sys
 from pathlib import Path
 
-import pytest
-
 # Add red-agent to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "red-agent"))
 
@@ -14,6 +12,7 @@ from scripts.validate_agent_output import (
     validate_final_report,
     validate_grounding_output,
     validate_output,
+    validate_strategy_output,
 )
 
 
@@ -89,13 +88,19 @@ class TestValidateAttackerOutput:
 
     def test_empty_findings_warning(self):
         """Test that empty findings list produces a warning."""
-        data = {"attack_results": {"attack_type": "test", "findings": []}}
+        data = {
+            "attack_results": {
+                "attack_type": "test",
+                "findings": [],
+                "summary": {"total_findings": 0},
+            }
+        }
         result = validate_attacker_output(data)
         assert result.is_valid  # Empty findings is a warning, not error
         assert any("No findings" in w for w in result.warnings)
 
-    def test_missing_evidence_warning(self):
-        """Test that missing evidence produces a warning."""
+    def test_missing_required_fields_is_error(self):
+        """Test that missing required fields in findings causes validation error."""
         data = {
             "attack_results": {
                 "attack_type": "test",
@@ -105,13 +110,16 @@ class TestValidateAttackerOutput:
                         "severity": "HIGH",
                         "title": "Test title here",
                         "confidence": 0.5,
+                        # Missing required fields
                     }
                 ],
+                "summary": {"total_findings": 1},
             }
         }
         result = validate_attacker_output(data)
-        # Should have warning about missing evidence
-        assert any("evidence" in w for w in result.warnings)
+        # Should have errors for missing required fields
+        assert not result.is_valid
+        assert any("category" in e.lower() for e in result.errors)
 
     def test_unknown_risk_category_warning(self):
         """Test that unknown risk category produces a warning."""
@@ -120,6 +128,7 @@ class TestValidateAttackerOutput:
                 "attack_type": "test",
                 "categories_probed": ["unknown-category"],
                 "findings": [],
+                "summary": {"total_findings": 0},
             }
         }
         result = validate_attacker_output(data)
@@ -151,7 +160,16 @@ class TestValidateGroundingOutput:
         data = {
             "grounding_results": {
                 "agent": "test",
-                "assessments": [{"finding_id": "RF-001", "evidence_strength": 1.5}],
+                "assessments": [
+                    {
+                        "finding_id": "RF-001",
+                        "evidence_strength": 1.5,
+                        "original_confidence": 0.9,
+                        "evidence_review": {"evidence_exists": True},
+                        "quote_verification": {"match_quality": "exact"},
+                        "inference_validity": {"valid": True},
+                    }
+                ],
             }
         }
         result = validate_grounding_output(data)
@@ -162,7 +180,16 @@ class TestValidateGroundingOutput:
         data = {
             "grounding_results": {
                 "agent": "test",
-                "assessments": [{"finding_id": "RF-001", "evidence_strength": 0.5}],
+                "assessments": [
+                    {
+                        "finding_id": "RF-001",
+                        "evidence_strength": 0.5,
+                        "original_confidence": 0.8,
+                        "evidence_review": {"evidence_exists": True},
+                        "quote_verification": {"match_quality": "exact"},
+                        "inference_validity": {"valid": True},
+                    }
+                ],
             }
         }
         result = validate_grounding_output(data)
@@ -234,6 +261,46 @@ class TestValidateFinalReport:
         assert any("limitations" in w for w in result.warnings)
 
 
+class TestValidateStrategyOutput:
+    """Tests for strategy output validation."""
+
+    def test_valid_output(self, valid_strategy_output):
+        """Test that valid strategy output passes validation."""
+        result = validate_strategy_output(valid_strategy_output)
+        assert result.is_valid
+
+    def test_missing_attack_strategy(self):
+        """Test that missing attack_strategy is an error."""
+        result = validate_strategy_output({})
+        assert not result.is_valid
+        assert any("attack_strategy" in e for e in result.errors)
+
+    def test_missing_mode(self):
+        """Test that missing mode is an error."""
+        data = {"attack_strategy": {"total_vectors": 5}}
+        result = validate_strategy_output(data)
+        assert not result.is_valid
+        assert any("mode" in e for e in result.errors)
+
+    def test_empty_vectors_warning(self):
+        """Test that empty selected_vectors produces a warning."""
+        data = {
+            "attack_strategy": {
+                "mode": "quick",
+                "total_vectors": 0,
+                "selected_vectors": [],
+            }
+        }
+        result = validate_strategy_output(data)
+        assert result.is_valid  # Valid but with warning
+        assert any("No attack vectors" in w for w in result.warnings)
+
+    def test_minimal_valid_output(self, minimal_strategy_output):
+        """Test that minimal strategy output passes validation."""
+        result = validate_strategy_output(minimal_strategy_output)
+        assert result.is_valid
+
+
 class TestValidateOutput:
     """Tests for the generic validate_output function."""
 
@@ -243,7 +310,10 @@ class TestValidateOutput:
         assert not result.is_valid
         assert any("Unknown output type" in e for e in result.errors)
 
-    def test_valid_types(self, valid_attacker_output, valid_grounding_output):
+    def test_valid_types(
+        self, valid_attacker_output, valid_grounding_output, valid_strategy_output
+    ):
         """Test that valid types are accepted."""
         assert validate_output(valid_attacker_output, "attacker").is_valid
         assert validate_output(valid_grounding_output, "grounding").is_valid
+        assert validate_output(valid_strategy_output, "strategy").is_valid
