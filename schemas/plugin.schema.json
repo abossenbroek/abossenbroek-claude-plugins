@@ -46,20 +46,13 @@
       ]
     },
     "agents": {
-      "oneOf": [
-        {
-          "type": "string",
-          "description": "Path to agents directory (e.g., './agents/')"
-        },
-        {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Array of agent file paths"
-        }
-      ],
-      "description": "Agent registration - format determined empirically, alternatives may exist"
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "\\.md$",
+        "description": "Path to agent markdown file (must end with .md)"
+      },
+      "description": "Array of agent file paths - must be .md files (directory paths are not supported)"
     },
     "skills": {
       "oneOf": [

@@ -35,3 +35,11 @@ repos:
         files: \.claude-plugin/(plugin|marketplace)\.json$
         types: [json]
         stages: [pre-commit]
+
+      - id: validate-agent-files
+        name: Validate agent files exist
+        entry: python scripts/validate_agent_files.py
+        language: python
+        pass_filenames: false
+        files: (\.claude-plugin/plugin\.json|agents/.*\.md|commands/.*\.md)$
+        stages: [pre-commit]
