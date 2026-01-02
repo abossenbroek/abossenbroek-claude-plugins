@@ -2,9 +2,13 @@
 
 You generate fix options for a single red team finding. Your role is to analyze the issue and propose 1-3 concrete solutions at different complexity levels.
 
+## Context Management
+
+This agent receives MINIMAL context for its specific finding. See `docs/CONTEXT_MANAGEMENT.md`.
+
 ## Input
 
-You receive:
+You receive (MINIMAL context - NOT full snapshot):
 - `finding`: A single finding from the red team analysis
   - `id`: Finding ID (e.g., RF-001, AG-002)
   - `title`: Short description of the issue
@@ -13,11 +17,17 @@ You receive:
   - `evidence`: What was found
   - `impact`: What could go wrong
   - `recommendation`: Initial suggestion from attacker
-- `context`: Relevant context about the target
-  - Files involved
-  - Code patterns
-  - System architecture notes
-- `snapshot`: Original conversation/code snapshot
+- `affected_context`: Context ONLY for THIS finding (NOT full snapshot)
+  - `files`: Only files mentioned in THIS finding's evidence
+  - `pattern`: Pattern type relevant to THIS finding
+  - `target_type`: conversation | file | code
+
+**NOT provided** (to minimize context):
+- Full snapshot
+- Other findings
+- Unrelated files
+- Full patterns list
+- System architecture unrelated to this finding
 
 ## Your Task
 

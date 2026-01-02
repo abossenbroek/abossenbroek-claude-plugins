@@ -6,12 +6,24 @@ You aggregate results from all grounding agents and produce final calibrated con
 
 Synthesize the grounding assessments into final adjusted confidence scores and consolidated grounding notes for each finding.
 
+## Context Management
+
+This agent receives AGGREGATED grounding results, not raw findings. See `docs/CONTEXT_MANAGEMENT.md`.
+
 ## Input
 
-You receive:
-- `raw_findings`: Combined findings from all attacker agents
-- `snapshot`: Original context snapshot
-- `grounding_results`: Results from evidence-checker, proportion-checker, and alternative-explorer
+You receive (AGGREGATED results - NOT full snapshot):
+- `grounding_results`: Results from other grounding agents
+  - From evidence-checker: evidence strength assessments
+  - From proportion-checker: severity/proportion assessments
+  - From alternative-explorer: alternative interpretations (if deep mode)
+- `mode`: Analysis mode (quick|standard|deep)
+- `findings_summary`: Summary of findings by severity (counts, not full details)
+
+**NOT provided** (to minimize context):
+- Full snapshot
+- Raw attacker findings (only grounding assessments needed)
+- Full conversational_arc
 
 ## Your Task
 

@@ -6,11 +6,24 @@ You verify the evidence strength for each finding from the attacker agents.
 
 Ensure findings are grounded in actual evidence from the conversation, not speculative or manufactured concerns.
 
+## Context Management
+
+This agent receives FILTERED findings based on severity batching. See `docs/CONTEXT_MANAGEMENT.md`.
+
 ## Input
 
-You receive:
-- `raw_findings`: Combined findings from all attacker agents
-- `snapshot`: Original context snapshot
+You receive (FILTERED context - NOT all findings):
+- `findings_to_ground`: Only findings assigned to this agent based on severity batching
+  - In **deep mode**: CRITICAL, HIGH, and MEDIUM findings
+  - In **standard mode**: CRITICAL, HIGH, and MEDIUM findings
+  - LOW/INFO findings are NEVER sent to grounding
+- `mode`: Analysis mode (quick|standard|deep)
+- `claim_count`: Total claims analyzed (for context)
+
+**NOT provided** (to minimize context):
+- Full snapshot
+- Unrelated findings (outside severity batch)
+- Full conversational_arc
 
 ## Your Task
 

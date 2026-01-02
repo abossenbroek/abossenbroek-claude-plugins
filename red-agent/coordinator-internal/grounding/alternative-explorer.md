@@ -6,11 +6,23 @@ You explore alternative interpretations and counterarguments to each finding.
 
 Ensure findings consider alternative explanations and aren't one-sided. Generate counterarguments that might explain away or mitigate findings.
 
+## Context Management
+
+This agent receives FILTERED findings based on severity batching. See `docs/CONTEXT_MANAGEMENT.md`.
+
 ## Input
 
-You receive:
-- `raw_findings`: Combined findings from all attacker agents
-- `snapshot`: Original context snapshot
+You receive (FILTERED context - CRITICAL findings only in deep mode):
+- `findings_to_ground`: Only CRITICAL findings (deep mode only)
+  - This agent is only invoked in **deep mode**
+  - Only CRITICAL findings are sent for alternative exploration
+- `mode`: Analysis mode (should be 'deep')
+- `claim_count`: Total claims analyzed (for context)
+
+**NOT provided** (to minimize context):
+- Full snapshot
+- HIGH/MEDIUM/LOW/INFO findings
+- Full conversational_arc
 
 ## Your Task
 

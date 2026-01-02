@@ -17,11 +17,17 @@ You are in an ISOLATED context. This means:
 - Adversarial reasoning stays in this isolated context
 - Only the final sanitized report returns to main session
 
+## Context Management (CRITICAL)
+
+Follow SOTA minimal context patterns. See `docs/CONTEXT_MANAGEMENT.md` for details.
+
+**Core principle**: Pass only what each agent needs, not full snapshot everywhere.
+
 ## Execution Flow
 
-### Phase 1: Context Analysis
+### Phase 1: Context Analysis (FULL CONTEXT)
 
-Launch the context-analyzer sub-agent:
+Launch the context-analyzer sub-agent with FULL snapshot (only agent that needs it):
 
 ```
 Task: Analyze context snapshot
@@ -31,23 +37,33 @@ Prompt: [Pass the full snapshot YAML received from command]
 
 Receive: Structured analysis of claims, patterns, and risk surface areas.
 
-### Phase 2: Attack Strategy
+**Extract from analysis for downstream use**:
+- `high_risk_claims`: Claims with risk score > 0.6
+- `claim_count`: Total claims analyzed
+- `patterns_detected`: List of pattern names
+- `risk_surface_summary`: Top risk categories
 
-Launch the attack-strategist sub-agent:
+### Phase 2: Attack Strategy (MINIMAL CONTEXT)
+
+Launch the attack-strategist with MINIMAL context (no full snapshot):
 
 ```
 Task: Select attack vectors
 Agent: coordinator-internal/attack-strategist.md
 Prompt:
   mode: [mode from snapshot]
-  analysis: [output from context-analyzer]
+  analysis_summary:
+    claim_count: [from analysis]
+    high_risk_claims_count: [count of high_risk_claims]
+    patterns: [patterns_detected]
+    top_risks: [risk_surface_summary]
 ```
 
 Receive: List of attack vectors to execute based on mode.
 
-### Phase 3: Attack Execution (Parallel)
+### Phase 3: Attack Execution (SELECTIVE CONTEXT)
 
-Launch attacker sub-agents IN PARALLEL based on strategy:
+Launch attacker sub-agents IN PARALLEL based on strategy.
 
 For each selected category, launch the appropriate attacker:
 
@@ -56,52 +72,85 @@ For each selected category, launch the appropriate attacker:
 - `hallucination-risks`, `over-confidence`, `information-leakage` → `coordinator-internal/hallucination-prober.md`
 - `scope-creep`, `dependency-blindness` → `coordinator-internal/scope-analyzer.md`
 
-Each attacker receives:
+Each attacker receives SELECTIVE context (NOT full snapshot):
 ```yaml
 context_analysis: [from Phase 1]
-attack_vectors: [relevant vectors from Phase 2]
-snapshot: [original snapshot]
+attack_vectors: [relevant vectors from Phase 2 for THIS attacker only]
+claims:
+  high_risk: [high_risk_claims relevant to this attack type]
+  total_count: [claim_count]
+mode: [mode from snapshot]
+target: [target from snapshot]
 ```
+
+**DO NOT pass**: Full snapshot, files_read list, tools_invoked list, conversational_arc
 
 Each returns: Structured findings in YAML format.
 
-### Phase 4: Grounding (Mode-Dependent)
+### Phase 4: Grounding (SEVERITY-BATCHED)
 
-Based on mode, launch grounding agents:
+Apply severity-based batching to reduce grounding operations.
+
+**First**: Categorize findings by severity:
+```yaml
+findings_by_severity:
+  CRITICAL: [list of CRITICAL findings]
+  HIGH: [list of HIGH findings]
+  MEDIUM: [list of MEDIUM findings]
+  LOW_INFO: [list of LOW and INFO findings]
+```
 
 **quick mode**: SKIP grounding entirely.
 
-**standard mode**: Launch 2 grounding agents:
-- `coordinator-internal/grounding/evidence-checker.md`
-- `coordinator-internal/grounding/proportion-checker.md`
+**standard mode**: Batch grounding by severity:
+- CRITICAL + HIGH findings → `evidence-checker.md` + `proportion-checker.md`
+- MEDIUM findings → `evidence-checker.md` only
+- LOW/INFO findings → SKIP grounding
 
-**deep mode**: Launch all 4 grounding agents IN PARALLEL:
+**deep mode**: Batch grounding by severity:
+- CRITICAL findings → ALL 4 grounding agents IN PARALLEL
+- HIGH findings → `evidence-checker.md` + `proportion-checker.md`
+- MEDIUM findings → `evidence-checker.md` only
+- LOW/INFO findings → SKIP grounding
+
+Grounding agents:
 - `coordinator-internal/grounding/evidence-checker.md`
 - `coordinator-internal/grounding/proportion-checker.md`
 - `coordinator-internal/grounding/alternative-explorer.md`
 - `coordinator-internal/grounding/calibrator.md`
 
-Each grounding agent receives:
+Each grounding agent receives FILTERED findings (not all):
 ```yaml
-raw_findings: [combined findings from all attackers]
-snapshot: [original snapshot]
+findings_to_ground: [only findings assigned to this agent]
+mode: [mode]
+claim_count: [for context]
 ```
+
+**DO NOT pass**: Full snapshot, unrelated findings
 
 Each returns: Grounding assessment with adjusted confidence scores.
 
-### Phase 5: Synthesis
+### Phase 5: Synthesis (SCOPE METADATA ONLY)
 
-Launch the insight-synthesizer:
+Launch the insight-synthesizer with SCOPE METADATA, not full snapshot:
 
 ```
 Task: Generate final report
 Agent: coordinator-internal/insight-synthesizer.md
 Prompt:
   mode: [mode]
-  snapshot: [original snapshot]
+  scope_metadata:
+    message_count: [from snapshot.conversational_arc or estimate]
+    files_analyzed: [count of snapshot.files_read]
+    claims_analyzed: [claim_count from analysis]
+    categories_covered: [count of attack vectors executed]
+    grounding_enabled: [true if not quick mode]
+    grounding_agents_used: [count based on mode]
   raw_findings: [from attackers]
   grounding_results: [from grounding agents, or null if quick mode]
 ```
+
+**DO NOT pass**: Full snapshot (synthesizer only needs counts for limitations section)
 
 Receive: Final sanitized markdown report.
 

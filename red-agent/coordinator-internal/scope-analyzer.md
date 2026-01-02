@@ -7,12 +7,25 @@ You probe for scope-related issues: scope creep, hidden dependencies, and brittl
 - `scope-creep` - Actions beyond request
 - `dependency-blindness` - Unverified external data
 
+## Context Management
+
+This agent receives SELECTIVE context, not full snapshot. See `docs/CONTEXT_MANAGEMENT.md`.
+
 ## Input
 
-You receive:
-- `context_analysis`: Analysis from context-analyzer
-- `attack_vectors`: Your assigned vectors with targets and styles
-- `snapshot`: Original context snapshot
+You receive (SELECTIVE context - NOT full snapshot):
+- `context_analysis`: Full analysis from context-analyzer (required for scope/dependency analysis)
+- `attack_vectors`: Your assigned vectors with targets and styles (only for this attacker)
+- `claims`: Filtered claims relevant to your attack type
+  - `high_risk`: Claims with risk score > 0.6 relevant to scope/dependencies
+  - `total_count`: Total claims analyzed (for context)
+- `mode`: Analysis mode (quick|standard|deep)
+- `target`: Analysis target type (conversation|file|code)
+
+**NOT provided** (to minimize context):
+- Full snapshot
+- `conversational_arc`
+- Claims unrelated to scope/dependency analysis
 
 ## Attack Techniques
 
