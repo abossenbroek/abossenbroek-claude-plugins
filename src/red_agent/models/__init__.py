@@ -21,6 +21,9 @@ from .findings import (
     RiskCategory,
 )
 from .outputs import (
+    # AskUserQuestion-compatible models
+    AskUserQuestion,
+    AskUserQuestionOption,
     # Attacker finding nested models
     AttackApplied,
     AttackerFinding,
@@ -36,11 +39,14 @@ from .outputs import (
     DetectedPattern,
     # Grounding nested models
     EvidenceReview,
+    # Fix planner models
+    FindingDetail,
+    FindingDetailOption,
     FindingEvidence,
     FindingImpact,
     FindingTarget,
-    # Fix planner models
     FindingWithFixes,
+    FixCoordinatorAskUserOutput,
     FixCoordinatorOutput,
     FixOption,
     FixPlannerOutput,
@@ -49,6 +55,7 @@ from .outputs import (
     GroundingOutput,
     GroundingResults,
     InferenceValidity,
+    QuestionBatch,
     QuoteVerification,
     RiskSurface,
     SeverityCounts,
@@ -73,6 +80,8 @@ from .strategy import (
 
 __all__ = [
     "AnalysisMode",
+    "AskUserQuestion",
+    "AskUserQuestionOption",
     "AttackApplied",
     "AttackResults",
     "AttackStrategyOutput",
@@ -92,12 +101,15 @@ __all__ = [
     "EvidenceReview",
     "EvidenceType",
     "Finding",
+    "FindingDetail",
+    "FindingDetailOption",
     "FindingEvidence",
     "FindingImpact",
     "FindingSeverity",
     "FindingTarget",
     "FindingWithFixes",
     "FindingsByLevel",
+    "FixCoordinatorAskUserOutput",
     "FixCoordinatorOutput",
     "FixOption",
     "FixPlannerOutput",
@@ -114,6 +126,7 @@ __all__ = [
     "MetaAnalysisPlan",
     "Methodology",
     "Pattern",
+    "QuestionBatch",
     "QuoteVerification",
     "Recommendations",
     "RedTeamReport",

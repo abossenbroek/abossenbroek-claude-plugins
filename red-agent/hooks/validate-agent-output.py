@@ -123,9 +123,81 @@ class FindingWithFixes(BaseModel):
 
 
 class FixCoordinatorOutput(BaseModel):
-    """Output from fix-coordinator agent."""
+    """Output from fix-coordinator agent (legacy format)."""
 
     findings_with_fixes: list[FindingWithFixes] = Field(default_factory=list)
+
+
+# Valid severity levels for question batches
+QUESTION_BATCH_SEVERITY_LEVELS = {"CRITICAL", "HIGH", "MEDIUM", "CRITICAL_HIGH"}
+
+
+class AskUserQuestionOption(BaseModel):
+    """Option for AskUserQuestion (matches Claude Code schema)."""
+
+    label: str
+    description: str
+
+
+class AskUserQuestion(BaseModel):
+    """A question for AskUserQuestion (matches Claude Code schema)."""
+
+    question: str = Field(min_length=10)
+    header: str = Field(max_length=12)
+    multiSelect: bool
+    options: list[AskUserQuestionOption] = Field(min_length=2, max_length=4)
+
+
+class QuestionBatch(BaseModel):
+    """A batch of questions grouped by severity."""
+
+    batch_number: int = Field(ge=1)
+    severity_level: str
+    questions: list[AskUserQuestion] = Field(min_length=1, max_length=4)
+
+    @field_validator("severity_level")
+    @classmethod
+    def validate_severity_level(cls, v: str) -> str:
+        if v not in QUESTION_BATCH_SEVERITY_LEVELS:
+            msg = f"Severity '{v}' must be one of {QUESTION_BATCH_SEVERITY_LEVELS}"
+            raise ValueError(msg)
+        return v
+
+
+class FindingDetailOption(BaseModel):
+    """Full option details for implementation summary."""
+
+    label: str
+    description: str
+    pros: list[str] = Field(default_factory=list)
+    cons: list[str] = Field(default_factory=list)
+    complexity: str
+    affected_components: list[str] = Field(default_factory=list)
+
+    @field_validator("complexity")
+    @classmethod
+    def validate_complexity(cls, v: str) -> str:
+        valid = {"LOW", "MEDIUM", "HIGH"}
+        if v.upper() not in valid:
+            msg = f"Complexity must be LOW, MEDIUM, or HIGH, got: {v}"
+            raise ValueError(msg)
+        return v.upper()
+
+
+class FindingDetail(BaseModel):
+    """Full finding details for implementation summary."""
+
+    finding_id: str
+    title: str
+    severity: str
+    full_options: list[FindingDetailOption] = Field(min_length=1, max_length=3)
+
+
+class FixCoordinatorAskUserOutput(BaseModel):
+    """Output from fix-coordinator in AskUserQuestion-compatible format."""
+
+    question_batches: list[QuestionBatch] = Field(min_length=1)
+    finding_details: list[FindingDetail] = Field(default_factory=list)
 
 
 # ============================================================================
@@ -155,7 +227,7 @@ MODEL_MAP = {
     "grounding": GroundingOutput,
     "report": RedTeamReport,
     "fix_planner": FixPlannerOutput,
-    "fix_coordinator": FixCoordinatorOutput,
+    "fix_coordinator": FixCoordinatorAskUserOutput,
 }
 
 
