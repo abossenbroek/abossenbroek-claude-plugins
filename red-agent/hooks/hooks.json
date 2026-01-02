@@ -1,0 +1,18 @@
+{
+  "_schema_note": "Hook configuration inferred from Claude Code docs (2025-01-01). PostToolUse validates agent outputs.",
+  "description": "Validates red-agent sub-agent outputs using Pydantic models",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/hooks/validate-agent-output.py\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

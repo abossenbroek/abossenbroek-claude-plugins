@@ -15,8 +15,18 @@ Red Agent provides `/redteam` - a contrarian agent that systematically probes co
 
 ## Installation
 
+### Requirements
+
+- Claude Code CLI installed
+- [uv](https://docs.astral.sh/uv/) (Python package manager) - required for validation hooks
+
+### Steps
+
 1. Clone or copy the `red-agent` directory to your project or Claude Code plugins location
 2. The plugin will be automatically detected by Claude Code
+3. Validation hooks run automatically via `uv` (no manual setup needed)
+
+The plugin includes a PostToolUse hook that validates agent outputs using Pydantic models. The hook uses `uv run --script` with inline dependencies, so validation "just works" without manual dependency installation.
 
 ## Usage
 
@@ -123,6 +133,9 @@ The plugin produces a markdown report including:
 red-agent/
 ├── .claude-plugin/
 │   └── plugin.json           # Plugin manifest
+├── hooks/
+│   ├── hooks.json            # Hook configuration
+│   └── validate-agent-output.py  # PostToolUse validation script
 ├── commands/
 │   └── redteam.md            # Command entry point
 ├── agents/
@@ -167,6 +180,38 @@ Findings are verified before reporting:
 - **Calibrator**: Synthesizes into final confidence scores
 
 This prevents manufactured findings and ensures proportionate reporting.
+
+### Automatic Validation with Auto-Correct
+
+A PostToolUse hook validates all sub-agent outputs in real-time. Invalid outputs are automatically corrected:
+
+```
+Agent produces YAML output
+        ↓
+PostToolUse hook validates
+        ↓
+┌─────────────────────────────┐
+│ Valid: Passes silently      │
+│ Invalid: Blocks + retries   │
+└─────────────────────────────┘
+        ↓
+Coordinator retries with error context
+        ↓
+User sees only valid final output
+```
+
+**How auto-correct works:**
+1. Hook detects YAML parse errors or schema violations
+2. Hook blocks the output with specific error details
+3. Coordinator automatically retries the sub-agent
+4. Process repeats until valid (max 2 retries)
+
+Validated output types:
+- **attacker** - Findings from attack agents
+- **grounding** - Evidence verification results
+- **context** - Context analysis output
+- **strategy** - Attack strategy selection
+- **report** - Final synthesized report
 
 ## Research Foundation
 

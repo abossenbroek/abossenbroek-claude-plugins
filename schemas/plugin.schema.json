@@ -1,0 +1,117 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/abossenbroek/abossenbroek-claude-plugins/schemas/plugin.schema.json",
+  "title": "Claude Code Plugin Schema",
+  "description": "Schema for plugin.json - inferred from official examples and error-driven discovery (may be incomplete)",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "description": "Plugin identifier"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string"
+    },
+    "author": {
+      "$ref": "#/definitions/person"
+    },
+    "commands": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Path to commands directory"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of command paths"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/command"
+          },
+          "description": "Command definitions object"
+        }
+      ]
+    },
+    "agents": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Path to agents directory (e.g., './agents/')"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of agent file paths"
+        }
+      ],
+      "description": "Agent registration - format determined empirically, alternatives may exist"
+    },
+    "skills": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "hooks": {
+      "type": "string",
+      "description": "Path to hooks configuration"
+    },
+    "mcpServers": {
+      "type": "string",
+      "description": "Path to MCP server configuration"
+    }
+  },
+  "definitions": {
+    "person": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        }
+      }
+    },
+    "command": {
+      "type": "object",
+      "required": ["source"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "pattern": "^\\.\\/.*\\.md$",
+          "description": "Path to command markdown file"
+        },
+        "content": {
+          "type": "string",
+          "description": "Inline markdown content (mutually exclusive with source)"
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

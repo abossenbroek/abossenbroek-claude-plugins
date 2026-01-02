@@ -146,6 +146,58 @@ grounding_results:
       notes: "[grounding rationale]"
 ```
 
+## Automatic Output Validation
+
+A PostToolUse hook automatically validates all sub-agent outputs using Pydantic models.
+
+### How It Works
+
+1. Sub-agent returns YAML output
+2. Hook parses and validates against the expected schema
+3. **On success**: Passes silently, you proceed normally
+4. **On failure**: Hook BLOCKS with specific error details
+
+### When Validation Blocks
+
+If a sub-agent's output fails validation, you will see the error in the tool response. The hook provides specific field-level errors.
+
+**Your response to a block:**
+1. Retry the sub-agent with the error context included in the prompt
+2. Maximum 2 retries per sub-agent
+3. After 2 failed retries, log to limitations section and continue with other agents
+
+Example retry prompt:
+```
+Previous output failed validation:
+- ('attack_results', 'findings', 0, 'id'): ID must match pattern XX-NNN
+
+Please regenerate with corrected format.
+[Original prompt here]
+```
+
+### Validation Rules Reference
+
+**Attacker Output** must have:
+- `attack_results.attack_type` - identifies the attacker
+- `attack_results.findings[]` - list of findings
+- Each finding must have: `id` (format: XX-NNN), `severity`, `title`, `confidence`
+- Severity must be: CRITICAL, HIGH, MEDIUM, LOW, or INFO
+- Confidence must be 0.0-1.0 or percentage string
+
+**Grounding Output** must have:
+- `grounding_results.agent` - identifies the grounding agent
+- `grounding_results.assessments[]` - list of assessments
+- Each assessment must have: `finding_id`, `evidence_strength` (0.0-1.0)
+
+**Context Analysis** must have:
+- `context_analysis.claim_analysis[]` - analyzed claims
+- `context_analysis.risk_surface` - risk assessment
+
+**Report Output** must have:
+- `executive_summary` - minimum 50 characters
+- `risk_level` - overall risk assessment
+- `findings[]` - list of findings
+
 ## Error Handling
 
 If a sub-agent fails or returns empty:
