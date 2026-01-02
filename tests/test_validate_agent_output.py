@@ -1,12 +1,6 @@
 """Tests for validate_agent_output.py."""
 
-import sys
-from pathlib import Path
-
-# Add red-agent to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "red-agent"))
-
-from scripts.validate_agent_output import (
+from red_agent.scripts.validate_agent_output import (
     validate_attacker_output,
     validate_context_analysis,
     validate_final_report,

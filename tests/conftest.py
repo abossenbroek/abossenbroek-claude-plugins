@@ -1,6 +1,13 @@
 """Pytest fixtures for validation tests."""
 
+import subprocess
+import sys
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
+
 import pytest
+import yaml
 
 
 @pytest.fixture
@@ -345,3 +352,56 @@ def valid_marketplace_json():
             }
         ],
     }
+
+
+# =============================================================================
+# CLI Test Helper Fixtures
+# =============================================================================
+
+
+@pytest.fixture
+def yaml_fixture_path(tmp_path: Path) -> Callable[[dict[str, Any], str], Path]:
+    """Factory fixture: converts Python dict to YAML file.
+
+    Usage:
+        def test_example(yaml_fixture_path, valid_attacker_output):
+            path = yaml_fixture_path(valid_attacker_output, "test.yaml")
+            # path is now a Path to a YAML file containing the data
+    """
+
+    def _create_yaml(data: dict[str, Any], filename: str = "test.yaml") -> Path:
+        path = tmp_path / filename
+        path.write_text(yaml.dump(data, default_flow_style=False))
+        return path
+
+    return _create_yaml
+
+
+@pytest.fixture
+def run_cli() -> Callable[..., subprocess.CompletedProcess[str]]:
+    """Factory fixture: runs CLI command and captures output.
+
+    Usage:
+        def test_example(run_cli):
+            result = run_cli(
+                "red_agent.scripts.validate_agent_output",
+                ["--type", "attacker", "--input", str(path)]
+            )
+            assert result.returncode == 0
+    """
+
+    def _run(
+        module_path: str,
+        args: list[str],
+        input_text: str | None = None,
+    ) -> subprocess.CompletedProcess[str]:
+        cmd = [sys.executable, "-m", module_path, *args]
+        return subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            input=input_text,
+            check=False,
+        )
+
+    return _run

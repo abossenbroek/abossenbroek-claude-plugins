@@ -14,6 +14,7 @@ Usage:
     python validate_agent_output.py --type attacker --input output.yaml
 """
 
+import argparse
 import sys
 from pathlib import Path
 from typing import Any
@@ -27,8 +28,7 @@ except ImportError:
     sys.exit(1)
 
 # Import Pydantic models
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from models import (
+from red_agent.models import (
     AttackerOutput,
     AttackStrategyOutput,
     ContextAnalysisOutput,
@@ -36,6 +36,9 @@ from models import (
     RedTeamReport,
     RiskCategoryName,
 )
+
+# Minimum length for executive summary (characters)
+MIN_SUMMARY_LENGTH = 50
 
 
 class ValidationResult:
@@ -126,7 +129,7 @@ def _add_report_warnings(data: dict[str, Any], result: ValidationResult) -> None
     if "limitations" not in data:
         result.add_warning("Missing 'limitations' section")
     summary = data.get("executive_summary", "")
-    if len(str(summary)) < 50:
+    if len(str(summary)) < MIN_SUMMARY_LENGTH:
         result.add_warning("Executive summary seems too short")
 
 
@@ -323,8 +326,6 @@ def validate_output(data: dict[str, Any], output_type: str) -> ValidationResult:
 
 def main() -> int:
     """CLI entry point."""
-    import argparse
-
     parser = argparse.ArgumentParser(description="Validate red team agent outputs")
     parser.add_argument(
         "--type",

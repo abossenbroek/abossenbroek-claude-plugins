@@ -1,10 +1,9 @@
 """Pydantic models for sub-agent output structures."""
 
-import re
-
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .enums import RiskCategoryName
+from .validators import validate_finding_id
 
 # Valid severity levels for attacker findings
 ATTACKER_SEVERITY_LEVELS = {"CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"}
@@ -52,13 +51,12 @@ class FindingImpact(BaseModel):
 class AttackerFinding(BaseModel):
     """A finding from an attacker sub-agent."""
 
-    # Required fields (existing)
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
     id: str
     severity: str
     title: str
     confidence: float | str
-
-    # New required fields (strict validation)
     category: str
     target: FindingTarget
     evidence: FindingEvidence
@@ -70,10 +68,7 @@ class AttackerFinding(BaseModel):
     @classmethod
     def validate_id_format(cls, v: str) -> str:
         """Validate finding ID matches XX-NNN or XXX-NNN format."""
-        if not re.match(r"^[A-Z]{2,3}-\d{3}$", v):
-            msg = f"Finding ID '{v}' must match XX-NNN or XXX-NNN format (e.g., RF-001)"
-            raise ValueError(msg)
-        return v
+        return validate_finding_id(v)
 
     @field_validator("severity")
     @classmethod
@@ -129,10 +124,11 @@ class AttackSummary(BaseModel):
 class AttackResults(BaseModel):
     """Results from an attacker sub-agent."""
 
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
     attack_type: str
     findings: list[AttackerFinding] = Field(default_factory=list)
     categories_probed: list[str] = Field(default_factory=list)
-    # New required fields
     patterns_detected: list[DetectedPattern] = Field(default_factory=list)
     summary: AttackSummary
 
@@ -190,6 +186,8 @@ class GroundingIssue(BaseModel):
 
 class GroundingAssessment(BaseModel):
     """Assessment from a grounding sub-agent."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
     finding_id: str
     evidence_strength: float = Field(ge=0.0, le=1.0)

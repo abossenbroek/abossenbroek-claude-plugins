@@ -10,6 +10,7 @@ Usage:
     python check_config_hygiene.py [--strict]
 """
 
+import argparse
 import json
 import re
 import sys
@@ -154,8 +155,6 @@ def check_config_file(file_path: Path, result: CheckResult) -> None:
 
 def main() -> int:
     """Run hygiene checks on all config files."""
-    import argparse
-
     parser = argparse.ArgumentParser(description="Check config file hygiene")
     parser.add_argument(
         "--strict",

@@ -1,6 +1,6 @@
 """Pydantic models for attack strategy output."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class StrategyTarget(BaseModel):
@@ -56,5 +56,7 @@ class AttackStrategyResults(BaseModel):
 
 class AttackStrategyOutput(BaseModel):
     """Root structure for attack strategy output."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
     attack_strategy: AttackStrategyResults

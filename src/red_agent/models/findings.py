@@ -5,6 +5,7 @@ import re
 from pydantic import BaseModel, Field, field_validator
 
 from .enums import FindingSeverity, RiskCategoryName, Severity
+from .validators import validate_finding_id
 
 
 class Evidence(BaseModel):
@@ -40,10 +41,7 @@ class Finding(BaseModel):
     @classmethod
     def validate_id_format(cls, v: str) -> str:
         """Validate finding ID matches XX-NNN or XXX-NNN format."""
-        if not re.match(r"^[A-Z]{2,3}-\d{3}$", v):
-            msg = f"Finding ID '{v}' must match XX-NNN or XXX-NNN format (e.g., RF-001)"
-            raise ValueError(msg)
-        return v
+        return validate_finding_id(v)
 
     @field_validator("confidence")
     @classmethod
