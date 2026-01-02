@@ -1,9 +1,7 @@
 """CLI integration tests for validate_agent_output."""
 
-from pathlib import Path
 from typing import Any
 
-import pytest
 import yaml
 
 

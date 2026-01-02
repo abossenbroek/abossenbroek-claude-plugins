@@ -54,7 +54,7 @@ class TestCheckConfigHygieneCLI:
         """Test valid config passes hygiene checks."""
         data = {
             "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
-            "_schema_note": "Schema inferred from official examples (2025-12-30). May be incomplete.",
+            "_schema_note": "Schema inferred from examples (2025-12-30). Incomplete.",
             "name": "test-plugin",
             "version": "1.0.0",
         }
@@ -173,7 +173,6 @@ class TestCheckConfigHygieneCLI:
 
     def test_multiple_files(
         self,
-        json_fixture_path,
         run_hygiene_cli,
         tmp_path: Path,
     ):
