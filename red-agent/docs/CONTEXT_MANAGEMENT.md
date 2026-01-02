@@ -222,6 +222,51 @@ Track these to validate optimization:
 3. **Redundancy Ratio**: Duplicate data passed / unique data
 4. **Grounding Efficiency**: Findings processed / grounding operations
 
+## Finding Conciseness Guidelines
+
+Findings are passed to multiple downstream agents (grounding, synthesizer). Keep them concise.
+
+### Target Field Lengths
+
+| Field | Target | Guidance |
+|-------|--------|----------|
+| `title` | 5-10 words | Action-oriented, specific |
+| `evidence.quote` | 1-2 sentences | Minimum needed to prove the point |
+| `evidence.description` | 2-3 sentences | What's wrong and why |
+| `probing_question` | 1 sentence | Single focused question |
+| `impact.if_exploited` | 1-2 sentences | Concrete consequence |
+| `recommendation` | 1-2 sentences | Specific, actionable fix |
+
+### Writing Style for Findings
+
+**DO:**
+- Lead with the most important information
+- Use specific terms, not vague language
+- One idea per field
+- Assume reader has context from the title
+
+**DON'T:**
+- Repeat information across fields
+- Include hedging ("might", "could potentially")
+- Explain obvious implications
+- Quote entire paragraphs when a phrase suffices
+
+### Example: Verbose vs Concise
+
+**Verbose (avoid):**
+```yaml
+evidence:
+  quote: "The user mentioned in message 5 that they wanted to implement authentication, and then in message 7 they discussed various options including OAuth and JWT, and the assistant recommended JWT without fully exploring the security implications of each approach or considering the specific requirements of the user's application context."
+  description: "The assistant made a recommendation for JWT authentication without adequately considering all the factors that might influence this decision, including the user's specific security requirements, the nature of the application, and the potential trade-offs between different authentication approaches."
+```
+
+**Concise (preferred):**
+```yaml
+evidence:
+  quote: "the assistant recommended JWT without fully exploring the security implications"
+  description: "Auth recommendation made without discussing user's security requirements or trade-offs between OAuth vs JWT."
+```
+
 ## Anti-Patterns to Avoid
 
 1. **Snapshot Broadcasting**: Passing full snapshot to every agent
@@ -229,6 +274,7 @@ Track these to validate optimization:
 3. **Grounding Everything**: LOW/INFO findings don't need full grounding
 4. **Embedding Large Lists**: Pass counts/summaries, not full arrays
 5. **Repeated Context**: Same data passed multiple times in chain
+6. **Verbose Findings**: Over-explaining when concise would suffice
 
 ## References
 

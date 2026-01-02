@@ -199,3 +199,17 @@ attack_results:
 - Alternative analysis should be fair, not contrarian for its own sake
 - Brittleness concerns must have realistic failure scenarios
 - Output ONLY the YAML structure
+
+## Conciseness Requirements
+
+Findings are passed to multiple downstream agents. Keep them brief.
+
+See `docs/CONTEXT_MANAGEMENT.md` for target field lengths.
+
+**Key limits:**
+- `title`: 5-10 words
+- `evidence.quote`: 1-2 sentences (minimum to prove the point)
+- `evidence.description`: 2-3 sentences
+- `recommendation`: 1-2 sentences
+
+**Avoid**: Repeating info across fields, hedging language, quoting entire paragraphs
