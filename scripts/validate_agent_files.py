@@ -20,7 +20,7 @@ def load_json(path: Path) -> dict | None:
         return None
 
 
-def validate_plugin_references(plugin_json: Path) -> list[str]:
+def validate_plugin_references(plugin_json: Path) -> list[str]:  # noqa: PLR0912
     """Validate all file references in a plugin.json.
 
     Returns:

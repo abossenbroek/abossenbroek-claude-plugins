@@ -73,57 +73,74 @@ Prompt:
 
 Wait for all fix-planners to complete.
 
-### Phase D: Aggregate and Return
+### Phase D: Aggregate and Return in AskUserQuestion Format
 
-Combine all fix-planner outputs into a single structured response.
+Combine all fix-planner outputs and format them for direct use with AskUserQuestion.
 
-**DO NOT** present a menu or call AskUserQuestion.
+**DO NOT** present a menu or call AskUserQuestion yourself.
 **DO NOT** generate an implementation summary.
-**ONLY** return the structured YAML below.
+**ONLY** return structured YAML in AskUserQuestion-compatible format below.
 
 ## Output Format
 
+Return data that maps directly to AskUserQuestion schema:
+
 ```yaml
-findings_with_fixes:
+# Batches of questions (max 4 per batch)
+question_batches:
+  - batch_number: 1
+    severity_level: "CRITICAL_HIGH"
+    questions:
+      - question: "RF-001: Invalid inference in authentication\nSeverity: CRITICAL | How should we fix this?"
+        header: "RF-001"
+        multiSelect: false
+        options:
+          - label: "A: Add validation [LOW]"
+            description: "Quick boundary check at auth entry point. Fast to implement."
+          - label: "B: Refactor flow [MEDIUM]"
+            description: "Restructure validation chain. Addresses root cause."
+          - label: "C: Type-safe handlers [HIGH]"
+            description: "Compile-time safety. Prevents entire bug category."
+      - question: "AG-002: Hidden assumption about user roles\nSeverity: HIGH | How should we fix this?"
+        header: "AG-002"
+        multiSelect: false
+        options:
+          - label: "A: Role check [LOW]"
+            description: "Add role validation middleware. Simple implementation."
+          - label: "B: RBAC system [MEDIUM]"
+            description: "Implement proper RBAC. More flexible long-term."
+
+  - batch_number: 2
+    severity_level: "MEDIUM"
+    questions:
+      - question: "CM-003: Context manipulation risk\nSeverity: MEDIUM | How should we fix this?"
+        header: "CM-003"
+        multiSelect: false
+        options:
+          - label: "A: Input sanitization [LOW]"
+            description: "Add sanitization layer. Quick fix."
+          - label: "B: Context isolation [MEDIUM]"
+            description: "Isolate context processing. More robust."
+
+# Full finding details for implementation summary generation
+finding_details:
   - finding_id: RF-001
     title: "Invalid inference in authentication"
     severity: CRITICAL
-    options:
-      - label: "A: Add validation check"
+    full_options:
+      - label: "A: Add validation [LOW]"
         description: "Quick boundary check at auth entry point..."
-        pros:
-          - "Fast to implement"
-        cons:
-          - "Doesn't fix root cause"
+        pros: ["Fast to implement", "Low risk"]
+        cons: ["Doesn't fix root cause"]
         complexity: LOW
-        affected_components:
-          - "AuthController"
-      - label: "B: Refactor validation flow"
-        description: "Restructure the validation chain..."
-        pros:
-          - "Addresses root cause"
-        cons:
-          - "More testing required"
+        affected_components: ["AuthController"]
+      - label: "B: Refactor flow [MEDIUM]"
+        description: "Restructure validation chain..."
+        pros: ["Addresses root cause"]
+        cons: ["More testing required"]
         complexity: MEDIUM
-        affected_components:
-          - "AuthController"
-          - "ValidationService"
-
-  - finding_id: AG-002
-    title: "Hidden assumption about user roles"
-    severity: HIGH
-    options:
-      - label: "A: Explicit role check"
-        description: "Add role validation middleware..."
-        pros:
-          - "Simple implementation"
-        cons:
-          - "Manual updates needed"
-        complexity: LOW
-        affected_components:
-          - "RoleMiddleware"
-
-  # ... more findings
+        affected_components: ["AuthController", "ValidationService"]
+  # ... more finding details
 ```
 
 ## Error Handling
