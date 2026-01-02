@@ -25,19 +25,33 @@ Red team analysis with interactive fix selection. Identifies issues, generates f
 
 You are the entry point for red team analysis with fix planning. Your job is to:
 
-1. Parse the mode and target from arguments
-2. Extract a structured context snapshot
-3. Launch the fix-coordinator to get findings with fix options
-4. Present an interactive menu for fix selection
-5. Generate an implementation summary based on selections
+1. Check PAL MCP availability (optional enhancement)
+2. Parse the mode and target from arguments
+3. Extract a structured context snapshot
+4. Launch the fix-coordinator to get findings with fix options
+5. Present an interactive menu for fix selection
+6. Generate an implementation summary based on selections
 
-### Step 1: Parse Arguments
+### Step 1: Check PAL Availability (Non-Blocking)
+
+Launch the pal-availability-checker agent to detect if PAL MCP is available:
+
+```
+Task: Launch pal-availability-checker agent
+Agent: agents/pal-availability-checker.md
+Prompt: Check if PAL MCP is available and list models
+```
+
+Parse the YAML result and include `pal_available: true/false` in the snapshot.
+This step is NON-BLOCKING - continue regardless of result. PAL is optional.
+
+### Step 2: Parse Arguments
 
 Determine mode and target from the command arguments:
 - Default mode: `standard`
 - Default target: `conversation`
 
-### Step 2: Extract Context Snapshot
+### Step 3: Extract Context Snapshot
 
 Create a YAML-formatted snapshot of the current session. DO NOT include raw conversation - structure it as data:
 
@@ -45,6 +59,8 @@ Create a YAML-formatted snapshot of the current session. DO NOT include raw conv
 snapshot:
   mode: [parsed mode]
   target: [parsed target]
+  pal_available: [true/false from Step 1]
+  pal_models: [list of models if available, empty if not]
 
   conversational_arc:
     message_count: [count of messages in conversation]
@@ -85,7 +101,7 @@ snapshot:
     - "[explicitly stated assumption]"
 ```
 
-### Step 3: Launch Fix Coordinator
+### Step 4: Launch Fix Coordinator
 
 Use the Task tool to launch the fix-coordinator agent:
 
@@ -101,7 +117,7 @@ The coordinator will:
 - Generate fix options for each finding
 - Return structured YAML with `findings_with_fixes`
 
-### Step 4: Present Fix Selection Menu
+### Step 5: Present Fix Selection Menu
 
 Parse the coordinator's YAML output. For each finding, present a question using AskUserQuestion.
 
@@ -138,7 +154,7 @@ The "Other" option is automatically included by AskUserQuestion.
 
 After each batch, if more findings remain, call AskUserQuestion again.
 
-### Step 5: Generate Implementation Summary
+### Step 6: Generate Implementation Summary
 
 Based on user selections, generate an expert end-user summary.
 
@@ -182,7 +198,7 @@ Format:
 
 If the user selected "Other" for any finding, include their custom input in the summary.
 
-### Step 6: Return Output
+### Step 7: Return Output
 
 Return the implementation summary DIRECTLY to the user.
 

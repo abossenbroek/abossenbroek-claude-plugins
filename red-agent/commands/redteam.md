@@ -25,18 +25,32 @@ Adversarial red team analysis of the current conversation or specified target.
 
 You are the MINIMAL entry point for red team analysis. Your ONLY job is to:
 
-1. Parse the mode and target from arguments
-2. Extract a structured context snapshot
-3. Launch the red-team-coordinator agent with the snapshot
-4. Return the coordinator's output directly to the user
+1. Check PAL MCP availability (optional enhancement)
+2. Parse the mode and target from arguments
+3. Extract a structured context snapshot
+4. Launch the red-team-coordinator agent with the snapshot
+5. Return the coordinator's output directly to the user
 
-### Step 1: Parse Arguments
+### Step 1: Check PAL Availability (Non-Blocking)
+
+Launch the pal-availability-checker agent to detect if PAL MCP is available:
+
+```
+Task: Launch pal-availability-checker agent
+Agent: agents/pal-availability-checker.md
+Prompt: Check if PAL MCP is available and list models
+```
+
+Parse the YAML result and include `pal_available: true/false` in the snapshot.
+This step is NON-BLOCKING - continue regardless of result. PAL is optional.
+
+### Step 2: Parse Arguments
 
 Determine mode and target from the command arguments:
 - Default mode: `standard`
 - Default target: `conversation`
 
-### Step 2: Extract Context Snapshot
+### Step 3: Extract Context Snapshot
 
 Create a YAML-formatted snapshot of the current session. DO NOT include raw conversation - structure it as data:
 
@@ -44,6 +58,8 @@ Create a YAML-formatted snapshot of the current session. DO NOT include raw conv
 snapshot:
   mode: [parsed mode]
   target: [parsed target]
+  pal_available: [true/false from Step 1]
+  pal_models: [list of models if available, empty if not]
 
   conversational_arc:
     message_count: [count of messages in conversation]
@@ -84,7 +100,7 @@ snapshot:
     - "[explicitly stated assumption]"
 ```
 
-### Step 3: Launch Coordinator
+### Step 4: Launch Coordinator
 
 Use the Task tool to launch a SINGLE agent:
 
@@ -94,7 +110,7 @@ Agent: agents/red-team-coordinator.md
 Prompt: [Include the full YAML snapshot]
 ```
 
-### Step 4: Return Output
+### Step 5: Return Output
 
 Return the coordinator's markdown report DIRECTLY to the user.
 

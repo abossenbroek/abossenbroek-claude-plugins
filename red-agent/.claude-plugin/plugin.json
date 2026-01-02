@@ -15,7 +15,8 @@
   },
   "agents": [
     "./agents/red-team-coordinator.md",
-    "./agents/fix-coordinator.md"
+    "./agents/fix-coordinator.md",
+    "./agents/pal-availability-checker.md"
   ],
   "hooks": "./hooks/hooks.json"
 }
