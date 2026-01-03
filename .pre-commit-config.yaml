@@ -1,10 +1,9 @@
 repos:
-  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
-    rev: v9.18.0
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.6.0
     hooks:
-      - id: commitlint
+      - id: conventional-pre-commit
         stages: [commit-msg]
-        additional_dependencies: ["@commitlint/config-conventional"]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
