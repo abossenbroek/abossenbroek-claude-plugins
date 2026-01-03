@@ -23,6 +23,61 @@ Follow SOTA minimal context patterns. See `skills/multi-agent-collaboration/refe
 
 **Core principle**: Pass only what each agent needs, not full snapshot everywhere.
 
+## Cascading Mode Detection
+
+**Before starting the normal flow, check if cascading is needed:**
+
+If `diff_metadata.files_changed` contains MORE THAN 50 files:
+
+1. **Enter cascading mode**
+2. **Split files into batches**:
+   - Create batches of 20 files each
+   - Preserve diff hunks for each file in its batch
+   - Assign batch IDs: `batch-1`, `batch-2`, etc.
+
+3. **Launch sub-coordinators IN PARALLEL** (up to 4 at once):
+   ```
+   Task: Launch pr-analysis-coordinator-sub for batch 1
+   Agent: coordinator-internal/pr-analysis-coordinator-sub.md
+   Prompt:
+     batch_input:
+       batch_id: batch-1
+       mode: [mode from snapshot]
+       git_operation: [from snapshot]
+       pal_available: [from snapshot]
+       pal_models: [from snapshot]
+       file_batch:
+         - path: [file path]
+           additions: [number]
+           deletions: [number]
+           change_type: [added/modified/deleted/renamed]
+           risk_score: [0.0-1.0]
+           diff_hunks: [extract relevant hunks from diff_output]
+       total_files_in_batch: [count]
+
+   [Repeat for batch-2, batch-3, batch-4...]
+   ```
+
+4. **Wait for all sub-coordinators to complete**
+
+5. **Aggregate findings**:
+   - Collect all findings from all batch_results
+   - Merge into single findings list
+   - Preserve all fields from each finding
+   - Calculate aggregated stats:
+     - Total files analyzed (sum of all batches)
+     - Total findings (sum across batches)
+     - High/medium/low counts (sum across batches)
+
+6. **Skip to Phase 5 (Synthesis)**:
+   - Pass aggregated findings to pr-insight-synthesizer
+   - Include metadata about cascading:
+     - `cascaded: true`
+     - `total_batches: [count]`
+     - `files_per_batch: 20`
+
+**If files_changed <= 50**: Continue with normal flow (Phases 1-5 below).
+
 ## Execution Flow
 
 ### Phase 1: Diff Analysis (SELECTIVE CONTEXT)
@@ -197,13 +252,39 @@ Each returns: Grounding assessment with adjusted confidence scores.
 
 ### Phase 5: Synthesis (SCOPE METADATA ONLY)
 
-Launch the pr-insight-synthesizer with SCOPE METADATA, not full diff:
+Launch the pr-insight-synthesizer with SCOPE METADATA, not full diff.
 
+**For cascading mode** (when findings come from sub-coordinators):
 ```
 Task: Generate final PR analysis report
 Agent: coordinator-internal/pr-insight-synthesizer.md
 Prompt:
   mode: [mode]
+  cascaded: true
+  cascade_metadata:
+    total_batches: [count]
+    files_per_batch: 20
+    total_files: [sum from all batches]
+  scope_metadata:
+    pr_title: [from metadata]
+    files_changed: [total from all batches]
+    lines_added: [count from metadata]
+    lines_deleted: [count from metadata]
+    high_risk_files_count: [count from aggregated findings]
+    categories_covered: [count of unique categories in findings]
+    grounding_enabled: [true if not quick mode]
+  raw_findings: [aggregated findings from all batch_results]
+  grounding_results: [null - grounding already applied by sub-coordinators]
+  diff_analysis: [null - analysis already done by sub-coordinators]
+```
+
+**For normal mode** (when findings come from Phases 1-4):
+```
+Task: Generate final PR analysis report
+Agent: coordinator-internal/pr-insight-synthesizer.md
+Prompt:
+  mode: [mode]
+  cascaded: false
   scope_metadata:
     pr_title: [from metadata]
     files_changed: [count from diff analysis]

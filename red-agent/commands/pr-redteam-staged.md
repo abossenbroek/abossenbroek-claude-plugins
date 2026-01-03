@@ -107,7 +107,32 @@ snapshot:
     [Full output from git diff --cached -U3]
 ```
 
-### Step 6: Launch Coordinator
+### Step 6: User Scoping for Large PRs
+
+If `pr_size` is "large" or "massive", use the AskUserQuestion tool to let the user scope the analysis:
+
+```
+Question: "This PR has {total_files} files with {total_additions + total_deletions} lines changed. How would you like to proceed?"
+
+Options:
+1. label: "Analyze all files"
+   description: "Complete analysis of all changes. May take 2-5 minutes for massive PRs."
+
+2. label: "High-risk files only [RECOMMENDED]"
+   description: "Focus on files with risk_score > 0.7. Faster and catches critical issues."
+
+3. label: "Specific files/directories"
+   description: "You choose which files or directories to analyze."
+```
+
+Based on the user's choice:
+- **Option 1**: Use all files from `diff_metadata.files_changed`
+- **Option 2**: Filter to only files where `risk_score > 0.7`
+- **Option 3**: Ask follow-up question: "Which files or directories? (provide paths or globs like `src/auth/*`)", then filter `files_changed` to match
+
+Update `diff_metadata.files_changed` with the filtered list before proceeding.
+
+### Step 7: Launch Coordinator
 
 Use the Task tool to launch a SINGLE agent:
 
@@ -117,7 +142,7 @@ Agent: agents/pr-analysis-coordinator.md
 Prompt: [Include the full YAML snapshot]
 ```
 
-### Step 7: Return Output
+### Step 8: Return Output
 
 Return the coordinator's markdown report DIRECTLY to the user.
 
