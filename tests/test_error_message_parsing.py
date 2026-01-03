@@ -10,7 +10,6 @@ import importlib.util
 import sys
 from pathlib import Path
 
-import pytest
 import yaml
 
 # Get project root to build paths
@@ -282,7 +281,11 @@ class TestErrorMessageFormatting:
         assert "field:" in formatted1
 
         # Nested path
-        error2 = {"loc": ("parent", "child", "grandchild"), "msg": "Error", "type": "test"}
+        error2 = {
+            "loc": ("parent", "child", "grandchild"),
+            "msg": "Error",
+            "type": "test",
+        }
         formatted2 = red_agent_hook.format_validation_error(error2)
         assert "parent.child.grandchild" in formatted2
 

@@ -97,6 +97,50 @@ git commit -m "feat(plugin): description"
 # Push and create PR
 git push -u origin feature/description
 gh pr create --title "Title" --body "Description"
+
+# IMPORTANT: Wait for CI to pass
+gh pr checks --watch
+```
+
+**After Creating/Updating PR - ALWAYS Verify CI**:
+
+1. **Wait for GitHub Actions to complete**:
+   ```bash
+   # Watch CI checks in real-time
+   gh pr checks --watch
+
+   # Or check status manually
+   gh pr checks
+   ```
+
+2. **Verify all checks pass**:
+   - ✅ Conventional Commit check
+   - ✅ Pre-commit hooks (ruff, yaml, json, schema validation)
+   - ✅ Test suite (pytest)
+   - ✅ Plugin validation
+
+3. **If CI fails**:
+   - Review the failing check logs: `gh pr checks --web`
+   - Fix issues locally
+   - Commit and push fixes
+   - Wait for CI to re-run and pass
+
+**CRITICAL**: Never consider a PR "complete" until CI passes. A green PR means:
+- All 302 tests pass
+- All pre-commit hooks pass
+- All plugins validate against Claude Code
+- Conventional commit format verified
+
+**Monitoring CI**:
+```bash
+# View detailed status
+gh pr view --json statusCheckRollup
+
+# Open Actions page in browser
+gh pr checks --web
+
+# View specific workflow run
+gh run view <run-id>
 ```
 
 **Conventional Commit Types**:

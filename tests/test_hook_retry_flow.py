@@ -10,7 +10,6 @@ import importlib.util
 import sys
 from pathlib import Path
 
-import pytest
 import yaml
 
 # Get project root to build paths
@@ -64,15 +63,17 @@ class TestRedAgentRetryFlow:
     def test_multiple_retries_no_limit(self):
         """Test multiple retry attempts work (no enforced limit)."""
         # Attempt 1: missing attack_type
-        attempt1 = {"attack_results": {"findings": [], "summary": {"total_findings": 0}}}
-        is_valid1, errors1 = red_agent_hook.validate_output(attempt1, "attacker")
+        attempt1 = {
+            "attack_results": {"findings": [], "summary": {"total_findings": 0}}
+        }
+        is_valid1, _errors1 = red_agent_hook.validate_output(attempt1, "attacker")
         assert is_valid1 is False
 
         # Attempt 2: still invalid (missing summary)
         attempt2 = {
             "attack_results": {"attack_type": "reasoning-attacker", "findings": []}
         }
-        is_valid2, errors2 = red_agent_hook.validate_output(attempt2, "attacker")
+        is_valid2, _errors2 = red_agent_hook.validate_output(attempt2, "attacker")
         assert is_valid2 is False
 
         # Attempt 3: now valid
@@ -122,7 +123,7 @@ class TestRedAgentRetryFlow:
                 ],
             }
         }
-        is_valid2, errors2 = red_agent_hook.validate_output(valid, "grounding")
+        is_valid2, _errors2 = red_agent_hook.validate_output(valid, "grounding")
         assert is_valid2 is True
 
     def test_partial_fix_still_blocked(self):
@@ -149,7 +150,7 @@ class TestRedAgentRetryFlow:
                 "summary": {"total_findings": 0},
             }
         }
-        is_valid3, errors3 = red_agent_hook.validate_output(complete, "attacker")
+        is_valid3, _errors3 = red_agent_hook.validate_output(complete, "attacker")
         assert is_valid3 is True
 
 
@@ -173,7 +174,7 @@ class TestContextEngineeringRetryFlow:
                 }
             }
         )
-        is_valid2, msg2 = context_engineering_hook.validate_agent_output(valid)
+        is_valid2, _msg2 = context_engineering_hook.validate_agent_output(valid)
         assert is_valid2 is True
 
     def test_multiple_retries_no_limit(self):
@@ -192,10 +193,12 @@ class TestContextEngineeringRetryFlow:
         # Attempt 2: wrong structure (improvement instead of plugin_analysis)
         attempt2 = yaml.dump(
             {
-                "improvements": [{
-                    "file": "test.md",
-                    # Missing required fields for improvement
-                }]
+                "improvements": [
+                    {
+                        "file": "test.md",
+                        # Missing required fields for improvement
+                    }
+                ]
             }
         )
         is_valid2, _ = context_engineering_hook.validate_agent_output(attempt2)

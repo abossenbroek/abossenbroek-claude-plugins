@@ -43,7 +43,9 @@ class TestRedAgentHookOutputFormat:
 
     def test_valid_attacker_returns_continue(self, valid_attacker_output):
         """Valid attacker output should return decision: continue in JSON."""
-        is_valid, errors = red_agent_hook.validate_output(valid_attacker_output, "attacker")
+        is_valid, errors = red_agent_hook.validate_output(
+            valid_attacker_output, "attacker"
+        )
 
         assert is_valid is True
         assert errors == []
@@ -60,7 +62,9 @@ class TestRedAgentHookOutputFormat:
 
     def test_valid_strategy_returns_continue(self, valid_strategy_output):
         """Valid strategy output should return decision: continue."""
-        is_valid, errors = red_agent_hook.validate_output(valid_strategy_output, "strategy")
+        is_valid, errors = red_agent_hook.validate_output(
+            valid_strategy_output, "strategy"
+        )
 
         assert is_valid is True
         assert errors == []
@@ -75,7 +79,9 @@ class TestRedAgentHookOutputFormat:
 
     def test_valid_grounding_returns_continue(self, valid_grounding_output):
         """Valid grounding output should return decision: continue."""
-        is_valid, errors = red_agent_hook.validate_output(valid_grounding_output, "grounding")
+        is_valid, errors = red_agent_hook.validate_output(
+            valid_grounding_output, "grounding"
+        )
 
         assert is_valid is True
         assert errors == []
@@ -134,7 +140,9 @@ class TestContextEngineeringHookOutputFormat:
     def test_invalid_plugin_analysis_exits_nonzero(self):
         """Invalid plugin analysis should exit 1 with error message."""
         invalid_output = yaml.dump({"plugin_analysis": {}})
-        is_valid, message = context_engineering_hook.validate_agent_output(invalid_output)
+        is_valid, message = context_engineering_hook.validate_agent_output(
+            invalid_output
+        )
 
         assert is_valid is False
         assert "INVALID" in message
@@ -150,7 +158,9 @@ class TestContextEngineeringHookOutputFormat:
     def test_invalid_context_improvement_exits_nonzero(self):
         """Invalid context improvement should exit 1 with error message."""
         invalid_output = yaml.dump({"improvements": [{}]})
-        is_valid, message = context_engineering_hook.validate_agent_output(invalid_output)
+        is_valid, message = context_engineering_hook.validate_agent_output(
+            invalid_output
+        )
 
         assert is_valid is False
         assert "INVALID" in message
@@ -166,7 +176,9 @@ class TestContextEngineeringHookOutputFormat:
     def test_malformed_yaml_returns_error(self):
         """Malformed YAML should return error."""
         malformed_yaml = "```yaml\ninvalid: yaml: structure:\n```"
-        is_valid, message = context_engineering_hook.validate_agent_output(malformed_yaml)
+        is_valid, message = context_engineering_hook.validate_agent_output(
+            malformed_yaml
+        )
 
         assert is_valid is False
         assert "YAML" in message.upper()
@@ -187,9 +199,7 @@ class TestHookJSONOutput:
     def test_block_decision_is_valid_json(self):
         """Test that block decision outputs valid JSON."""
         # The hook outputs JSON for block
-        json_output = json.dumps(
-            {"decision": "block", "reason": "Test error message"}
-        )
+        json_output = json.dumps({"decision": "block", "reason": "Test error message"})
         parsed = json.loads(json_output)
 
         assert parsed["decision"] == "block"
@@ -204,7 +214,8 @@ def valid_plugin_analysis():
         "plugin_name": "test-plugin",
         "plugin_version": "1.0.0",
         # Only required field is plugin_name
-        # Optional: current_patterns, violations, agents, opportunities, metrics, summary
+        # Optional: current_patterns, violations, agents, opportunities,
+        # metrics, summary
     }
 
 
