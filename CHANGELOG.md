@@ -7,6 +7,84 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-01-03
+
+### Added
+
+- **PR Red-Team Analysis** - Apply adversarial testing to pull request code changes
+  - 4 git operation modes: `/redteam-pr:staged`, `:working`, `:diff`, `:branch`
+  - All 10 rainbow-teaming categories now applied to code changes
+  - 4 code attackers running in parallel: reasoning, context, security, scope
+  - PR-specific report format with file grouping, breaking changes, test coverage analysis
+
+- **User Scoping for Large PRs** - Interactive filtering for PRs with 15+ files
+  - Analyze all files (may take 2-5 minutes for massive PRs)
+  - High-risk files only (risk_score > 0.7) - recommended
+  - Specific files/directories via glob patterns
+  - By commit (branch mode only)
+
+- **Cascading Coordination** - Parallel batch processing for massive PRs (50+ files)
+  - Splits files into batches of 20
+  - Launches up to 4 sub-coordinators in parallel (16 total attackers)
+  - 4x speedup for massive PRs through intelligent parallelization
+
+- **Optional PAL Integration** - Enhanced analysis with PAL MCP when available
+  - diff-analyzer: PAL challenges risk assessments
+  - security-prober: PAL deepthink for CRITICAL/HIGH findings
+  - pr-analysis-coordinator: PAL challenges CRITICAL findings in deep mode
+  - Graceful degradation when PAL unavailable
+
+- **Comprehensive Test Suite** - 48 new tests for PR analysis (308 total)
+  - Pydantic model validation: DiffMetadata, FileRef, CodeAttackerOutput, PRRedTeamReport
+  - Validation function tests: validate_diff_analysis, validate_code_attacker, validate_pr_report
+  - Finding ID format, risk score constraints, severity levels
+
+### Changed
+
+- **Context Management** - 85% token reduction for PR analysis
+  - SELECTIVE context tier for diff parsing (2K tokens vs 10K naive)
+  - FILTERED context per attacker (1K tokens vs 5K per attacker)
+  - METADATA only to synthesizer (1.2K tokens vs 20K)
+  - Total: ~10K tokens vs ~85K naive approach
+
+- **Validation Infrastructure** - Extended for PR analysis outputs
+  - 17 new Pydantic models in `pr_analysis.py`
+  - Enhanced validation with PR-specific warning functions
+  - Complete nested structure validation for diff analysis and code findings
+
+- **Documentation** - Added comprehensive PR Analysis section to README
+  - Usage examples for all 4 commands
+  - Mode options and user scoping behavior
+  - Performance characteristics table
+  - Example workflows (pre-commit review, feature branch review, CI/CD integration)
+
+### Technical Notes
+
+PR Analysis Architecture (5-phase pipeline):
+```
+Command → Git Discovery → pr-analysis-coordinator (FIREWALL)
+  ├─ Phase 1: Diff Analysis (SELECTIVE) → diff-analyzer
+  ├─ Phase 2: Strategy (MINIMAL) → attack-strategist
+  ├─ Phase 3: Code Attack (FILTERED, PARALLEL) → 4 code attackers
+  ├─ Phase 4: Grounding (BATCHED) → existing grounding agents
+  └─ Phase 5: Synthesis (METADATA) → pr-insight-synthesizer
+```
+
+Performance targets by PR size:
+```
+Tiny (1-2 files):     4 agents,  10s target
+Small (2-5 files):    4 agents,  20s target
+Medium (5-15 files):  4 agents,  60s target
+Large (15-50 files):  8 agents, 120s target
+Massive (50+ files): 16 agents, 300s target (5 min)
+```
+
+Code attacker categories:
+- code-reasoning-attacker: logic-errors, assumption-gaps, edge-case-handling
+- code-context-attacker: breaking-changes, dependency-violations, api-contract-changes
+- security-prober: security-vulnerabilities, input-validation, information-disclosure
+- change-scope-analyzer: scope-creep, unintended-side-effects, test-coverage-gaps
+
 ## [1.2.1] - 2026-01-02
 
 ### Added
@@ -107,7 +185,8 @@ Risk categories: reasoning-flaws, assumption-gaps, context-manipulation, authori
 
 ---
 
-[Unreleased]: https://github.com/abossenbroek/abossenbroek-claude-plugins/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/abossenbroek/abossenbroek-claude-plugins/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/abossenbroek/abossenbroek-claude-plugins/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/abossenbroek/abossenbroek-claude-plugins/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/abossenbroek/abossenbroek-claude-plugins/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/abossenbroek/abossenbroek-claude-plugins/compare/v1.0.0...v1.1.0
