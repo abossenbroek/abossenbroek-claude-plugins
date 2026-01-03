@@ -200,6 +200,79 @@ class FixCoordinatorAskUserOutput(BaseModel):
     finding_details: list[FindingDetail] = Field(default_factory=list)
 
 
+# New fix orchestration models
+class FixReaderOutput(BaseModel):
+    """Output from fix-reader agent."""
+
+    finding_id: str
+    parsed_intent: str
+    context_hints: list[str] = Field(default_factory=list)
+
+
+class FixPlanV2Output(BaseModel):
+    """Output from fix-planner-v2 agent."""
+
+    finding_id: str
+    fix_plan: dict[str, Any]  # Contains changes, execution_order, risks
+
+
+class FixRedTeamerOutput(BaseModel):
+    """Output from fix-red-teamer agent."""
+
+    finding_id: str
+    validation: dict[str, Any]  # Contains addresses_issue, is_minimal, etc.
+    approved: bool
+    adjusted_plan: dict[str, Any] | None = None
+
+
+class FixApplicatorOutput(BaseModel):
+    """Output from fix-applicator agent."""
+
+    finding_id: str
+    applied_changes: dict[str, Any]  # Contains file, diff, etc.
+    success: bool
+    error: str | None = None
+
+
+class FixCommitterOutput(BaseModel):
+    """Output from fix-committer agent."""
+
+    finding_id: str
+    commit_result: (
+        dict[str, Any] | None
+    )  # Contains commit_hash, files_committed, message
+    success: bool
+    error: str | None = None
+
+
+class FixValidatorOutput(BaseModel):
+    """Output from fix-validator agent."""
+
+    finding_id: str
+    commit_hash: str
+    validation_result: dict[str, Any]  # Contains tests_passed, lint_passed, etc.
+
+
+class FixPhaseCoordinatorOutput(BaseModel):
+    """Output from fix-phase-coordinator agent."""
+
+    finding_id: str
+    status: str  # success | failed
+    commit_hash: str | None = None
+    files_changed: list[str] = Field(default_factory=list)
+    validation: str | None = None
+    retry_count: int = Field(ge=0, le=2)
+    error: str | None = None
+    revert_command: str | None = None
+
+
+class FixOrchestratorOutput(BaseModel):
+    """Output from fix-orchestrator agent."""
+
+    execution_summary: dict[str, Any] | None = None  # After execution
+    question_batches: list[QuestionBatch] | None = None  # If interactive mode
+
+
 # ============================================================================
 # Agent Path to Validation Type Mapping
 # ============================================================================
@@ -218,6 +291,15 @@ AGENT_TYPE_MAP = {
     "insight-synthesizer": "report",
     "fix-planner": "fix_planner",
     "fix-coordinator": "fix_coordinator",
+    # New fix orchestration agents
+    "fix-orchestrator": "fix_orchestrator",
+    "fix-phase-coordinator": "fix_phase_coordinator",
+    "fix-reader": "fix_reader",
+    "fix-planner-v2": "fix_planner_v2",
+    "fix-red-teamer": "fix_red_teamer",
+    "fix-applicator": "fix_applicator",
+    "fix-committer": "fix_committer",
+    "fix-validator": "fix_validator",
 }
 
 MODEL_MAP = {
@@ -228,6 +310,15 @@ MODEL_MAP = {
     "report": RedTeamReport,
     "fix_planner": FixPlannerOutput,
     "fix_coordinator": FixCoordinatorAskUserOutput,
+    # New fix orchestration models
+    "fix_orchestrator": FixOrchestratorOutput,
+    "fix_phase_coordinator": FixPhaseCoordinatorOutput,
+    "fix_reader": FixReaderOutput,
+    "fix_planner_v2": FixPlanV2Output,
+    "fix_red_teamer": FixRedTeamerOutput,
+    "fix_applicator": FixApplicatorOutput,
+    "fix_committer": FixCommitterOutput,
+    "fix_validator": FixValidatorOutput,
 }
 
 

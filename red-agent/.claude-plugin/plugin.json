@@ -12,6 +12,9 @@
     "redteam-w-fix": {
       "source": "./commands/red-team-w-fix.md"
     },
+    "redteam-fix-orchestrator": {
+      "source": "./commands/redteam-fix-orchestrator.md"
+    },
     "redteam-pr:staged": {
       "source": "./commands/pr-redteam-staged.md"
     },
@@ -28,6 +31,7 @@
   "agents": [
     "./agents/red-team-coordinator.md",
     "./agents/fix-coordinator.md",
+    "./agents/fix-orchestrator.md",
     "./agents/pal-availability-checker.md",
     "./agents/pr-analysis-coordinator.md"
   ]
