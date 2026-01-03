@@ -228,6 +228,172 @@ Contributions welcome! Areas of interest:
 - Improved grounding heuristics
 - Integration with external verification tools
 
+## PR Analysis Commands
+
+Red Agent includes specialized commands for analyzing pull requests and git diffs directly.
+
+### Available Commands
+
+| Command | Description |
+|---------|-------------|
+| `/redteam-pr:staged` | Analyze staged changes (`git diff --cached`) |
+| `/redteam-pr:working` | Analyze working directory changes (`git diff`) |
+| `/redteam-pr:diff <file>` | Analyze a specific diff file |
+| `/redteam-pr:branch <base>` | Analyze branch changes against base (default: main) |
+
+### Usage Examples
+
+```bash
+# Analyze staged changes before committing
+/redteam-pr:staged
+
+# Quick analysis of working directory changes
+/redteam-pr:working quick
+
+# Deep analysis of a specific diff file
+/redteam-pr:diff ./changes.diff deep
+
+# Analyze feature branch against main
+/redteam-pr:branch main
+
+# Focus on specific risk category
+/redteam-pr:staged focus:reasoning-flaws
+```
+
+### Mode Options
+
+All PR analysis commands support the same modes as `/redteam`:
+
+| Mode | Description |
+|------|-------------|
+| `quick` | Fast surface-level analysis (2-3 vectors, no grounding) |
+| `standard` | Balanced analysis (default) |
+| `deep` | Comprehensive review (all vectors, full grounding) |
+| `focus:X` | Deep dive on specific category |
+
+### User Scoping for Large PRs
+
+For PRs with many files, the commands automatically scope the analysis:
+
+1. **File Risk Scoring**: Each file is assigned a risk score (0.0-1.0) based on:
+   - File type (security-sensitive files score higher)
+   - Change patterns (authentication, validation changes)
+   - Size of changes
+
+2. **User Scoping**: For large PRs (15+ files), users may be asked to select focus areas:
+   - High-risk files are pre-selected
+   - Users can add/remove files from analysis scope
+   - Ensures analysis stays focused and efficient
+
+### Cascading Support for Massive PRs
+
+For PRs with 50+ files or 2000+ lines changed:
+
+1. **Automatic Parallelization**: Files are grouped into batches
+2. **8-16 Parallel Agents**: Multiple code-reasoning-attacker agents analyze batches concurrently
+3. **Result Aggregation**: Findings are merged and deduplicated
+4. **Pattern Detection**: Cross-file patterns are identified across all batches
+
+### PAL Integration (Optional)
+
+PR analysis supports optional PAL (Prompt-Agent-Loop) enhancement:
+
+- Structured prompt patterns for consistent analysis
+- Agent orchestration for complex multi-file PRs
+- Loop detection to prevent analysis cycles
+
+### Performance Characteristics
+
+| PR Size | Files | Lines Changed | Agents | Target Time |
+|---------|-------|---------------|--------|-------------|
+| Tiny | 1-2 | 1-10 | 4 | 10s |
+| Small | 2-5 | 10-100 | 4 | 20s |
+| Medium | 5-15 | 100-500 | 4 | 60s |
+| Large | 15-50 | 500-2000 | 8 | 120s |
+| Massive | 50+ | 2000+ | 16 | 300s (5 min) |
+
+### Example Workflows
+
+#### Pre-Commit Review
+
+```bash
+# Stage your changes
+git add -A
+
+# Run analysis on staged changes
+/redteam-pr:staged
+
+# Review findings and fix issues before committing
+```
+
+#### Feature Branch Review
+
+```bash
+# Switch to feature branch
+git checkout feature/new-auth
+
+# Analyze all changes against main
+/redteam-pr:branch main deep
+
+# Address findings before creating PR
+```
+
+#### CI/CD Integration
+
+```bash
+# In CI pipeline, analyze the PR diff
+/redteam-pr:diff $PR_DIFF_FILE standard
+
+# Fail pipeline if CRITICAL or HIGH findings
+```
+
+### Output Format
+
+PR analysis produces a structured report including:
+
+- **PR Summary**: File counts, additions/deletions, risk classification
+- **Risk Level**: Overall CRITICAL/HIGH/MEDIUM/LOW/INFO assessment
+- **Findings**: Issues organized by file and severity
+- **Breaking Changes**: API changes that may affect consumers
+- **Recommendations**: Prioritized action items
+- **Test Coverage Notes**: Comments on test changes
+
+### Sample Output
+
+```markdown
+## PR Red Team Analysis Report
+
+### Executive Summary
+This PR introduces authentication changes with moderate risk...
+
+### PR Summary
+- Files Changed: 5
+- Additions: 150 / Deletions: 30
+- PR Size: Medium
+- High Risk Files: src/auth/handler.ts
+
+### Risk Level: HIGH
+
+### Findings
+
+#### [PR-001] Missing Input Validation
+- **Severity**: HIGH
+- **File**: src/auth/handler.ts (lines 45-52)
+- **Confidence**: 85%
+
+**Description**: User input is not validated...
+
+**Recommendation**: Add input validation using...
+
+### Breaking Changes
+- API signature change in authenticate()...
+
+### Recommendations
+1. Add comprehensive input validation
+2. Implement proper error handling
+3. Add unit tests for edge cases
+```
+
 ## License
 
 MIT

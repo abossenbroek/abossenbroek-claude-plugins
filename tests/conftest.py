@@ -403,3 +403,247 @@ def run_cli() -> Callable[..., subprocess.CompletedProcess[str]]:
         )
 
     return _run
+
+
+# =============================================================================
+# PR Analysis Fixtures
+# =============================================================================
+
+
+@pytest.fixture
+def valid_diff_metadata():
+    """Valid diff metadata with all required fields."""
+    return {
+        "git_operation": "staged",
+        "files_changed": [
+            {
+                "path": "src/auth/handler.ts",
+                "additions": 25,
+                "deletions": 10,
+                "change_type": "modified",
+                "risk_score": 0.85,
+            },
+            {
+                "path": "src/utils/helpers.ts",
+                "additions": 15,
+                "deletions": 5,
+                "change_type": "modified",
+                "risk_score": 0.3,
+            },
+            {
+                "path": "tests/auth.test.ts",
+                "additions": 50,
+                "deletions": 0,
+                "change_type": "added",
+                "risk_score": 0.1,
+            },
+        ],
+        "total_files_changed": 3,
+        "total_additions": 90,
+        "total_deletions": 15,
+        "pr_size": "small",
+    }
+
+
+@pytest.fixture
+def valid_diff_analysis_output():
+    """Valid diff analysis output with all required fields."""
+    return {
+        "diff_analysis": {
+            "summary": {
+                "files_changed": 3,
+                "high_risk_files": 1,
+                "medium_risk_files": 1,
+                "low_risk_files": 1,
+                "total_insertions": 90,
+                "total_deletions": 15,
+            },
+            "file_analysis": [
+                {
+                    "file_id": "auth_handler_001",
+                    "path": "src/auth/handler.ts",
+                    "risk_level": "high",
+                    "risk_score": 0.85,
+                    "change_summary": (
+                        "Authentication handler with new validation logic"
+                    ),
+                    "risk_factors": ["authentication", "validation", "security"],
+                    "line_ranges": [[45, 67], [80, 95]],
+                    "change_type": "modification",
+                    "insertions": 25,
+                    "deletions": 10,
+                }
+            ],
+            "risk_surface": [
+                {
+                    "category": "reasoning-flaws",
+                    "exposure": "high",
+                    "affected_files": ["auth_handler_001"],
+                    "notes": "Authentication logic changes require careful review",
+                }
+            ],
+            "patterns_detected": [
+                {
+                    "pattern": "error-handling-changes",
+                    "description": "Multiple error handling modifications detected",
+                    "instances": 2,
+                    "affected_files": ["auth_handler_001"],
+                    "risk_implication": (
+                        "Error handling changes may introduce regressions"
+                    ),
+                }
+            ],
+            "high_risk_files": ["auth_handler_001"],
+            "focus_areas": [
+                {
+                    "area": "authentication",
+                    "files": ["auth_handler_001"],
+                    "rationale": "Critical security component with validation changes",
+                }
+            ],
+            "key_observations": [
+                "Authentication handler has significant changes",
+                "New validation logic added to auth flow",
+            ],
+        }
+    }
+
+
+@pytest.fixture
+def valid_code_attacker_output():
+    """Valid code attacker output with all required fields."""
+    return {
+        "attack_results": {
+            "attack_type": "code-reasoning-attacker",
+            "categories_probed": [
+                "logic-errors",
+                "assumption-gaps",
+                "edge-case-handling",
+            ],
+            "findings": [
+                {
+                    "id": "LE-001",
+                    "category": "logic-errors",
+                    "severity": "HIGH",
+                    "title": "Missing null check in authentication flow",
+                    "target": {
+                        "file_path": "src/auth/handler.ts",
+                        "line_numbers": [47, 52],
+                        "diff_snippet": (
+                            "+ if (user.isValid) {\n"
+                            "+   return authenticate(user);\n"
+                            "+ }"
+                        ),
+                        "function_name": "validateUser",
+                    },
+                    "evidence": {
+                        "type": "control_flow_error",
+                        "description": "User object not validated before access",
+                        "code_quote": "if (user.isValid)",
+                    },
+                    "attack_applied": {
+                        "style": "control-flow-tracing",
+                        "probe": "What happens when user is null or undefined?",
+                    },
+                    "impact": {
+                        "if_exploited": "Application crashes with TypeError",
+                        "affected_functionality": "User authentication",
+                    },
+                    "recommendation": (
+                        "Add null check before accessing user properties: "
+                        "if (user && user.isValid)"
+                    ),
+                    "confidence": 0.85,
+                }
+            ],
+            "patterns_detected": [
+                {
+                    "pattern": "missing-null-checks",
+                    "instances": 2,
+                    "files_affected": ["src/auth/handler.ts", "src/auth/validator.ts"],
+                    "description": "Multiple locations lack null safety checks",
+                    "systemic_recommendation": (
+                        "Consider using TypeScript strict null checks"
+                    ),
+                }
+            ],
+            "summary": {
+                "total_findings": 1,
+                "by_severity": {
+                    "critical": 0,
+                    "high": 1,
+                    "medium": 0,
+                    "low": 0,
+                    "info": 0,
+                },
+                "highest_risk_file": "src/auth/handler.ts",
+                "primary_weakness": "Insufficient null safety in authentication flow",
+            },
+        }
+    }
+
+
+@pytest.fixture
+def valid_pr_report():
+    """Valid PR red team report with all required fields."""
+    return {
+        "executive_summary": (
+            "This PR introduces authentication changes with moderate risk. "
+            "Key concerns include missing null checks in the auth handler "
+            "and potential error handling gaps that could affect user experience."
+        ),
+        "pr_summary": {
+            "title": "Add OAuth2 authentication",
+            "description": "Implements OAuth2 authentication flow with refresh tokens",
+            "files_changed": 5,
+            "additions": 150,
+            "deletions": 30,
+            "pr_size": "medium",
+            "high_risk_files": ["src/auth/handler.ts"],
+        },
+        "risk_level": "HIGH",
+        "findings": [
+            {
+                "id": "PR-001",
+                "severity": "HIGH",
+                "title": "Missing input validation in auth handler",
+                "description": "User input is not validated before processing, "
+                "which could lead to injection attacks",
+                "file_path": "src/auth/handler.ts",
+                "line_ranges": [[45, 52]],
+                "recommendation": (
+                    "Add input validation using a schema validation library"
+                ),
+                "confidence": 0.85,
+            }
+        ],
+        "findings_by_file": {
+            "src/auth/handler.ts": [
+                {
+                    "id": "PR-001",
+                    "severity": "HIGH",
+                    "title": "Missing input validation in auth handler",
+                    "description": "User input is not validated before processing",
+                    "recommendation": "Add input validation using schema validation",
+                    "confidence": 0.85,
+                }
+            ]
+        },
+        "breaking_changes": [
+            {
+                "type": "API signature change",
+                "description": (
+                    "Function authenticate() now requires additional scope parameter"
+                ),
+                "file_path": "src/auth/handler.ts",
+                "impact": "Existing callers will fail until updated to pass scope",
+                "mitigation": "Add default value for scope parameter",
+            }
+        ],
+        "recommendations": [
+            "Add comprehensive input validation",
+            "Implement proper error handling",
+            "Add unit tests for edge cases",
+        ],
+        "test_coverage_notes": "Test coverage increased by 15% with new auth tests",
+    }
