@@ -150,9 +150,7 @@ class StateManager:
                         )
                     )
                 else:
-                    print(
-                        yaml.dump(state.model_dump(mode="json"), sort_keys=False)
-                    )
+                    print(yaml.dump(state.model_dump(mode="json"), sort_keys=False))
             finally:
                 self._release_lock(f)
 

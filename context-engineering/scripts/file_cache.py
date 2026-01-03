@@ -285,9 +285,7 @@ def main() -> None:
     discover_parser = subparsers.add_parser(
         "discover", help="Discover files and add to cache"
     )
-    discover_parser.add_argument(
-        "plugin_path", type=Path, help="Plugin directory path"
-    )
+    discover_parser.add_argument("plugin_path", type=Path, help="Plugin directory path")
     discover_parser.add_argument(
         "--pattern",
         type=str,
