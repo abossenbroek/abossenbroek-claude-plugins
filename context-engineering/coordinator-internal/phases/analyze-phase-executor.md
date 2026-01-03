@@ -22,31 +22,47 @@ Receives via prompt:
 
 ## Execution
 
-1. **Initialize State**
-   ```bash
-   python scripts/state_manager.py init "$plugin_path" --focus "$focus_area" --mode standard
-   ```
+### Phase 1a: Initialize State
 
-2. **Launch Plugin Analyzer**
-   ```
-   Task: Analyze plugin structure
-   Agent: coordinator-internal/plugin-analyzer.md
-   Prompt:
-     plugin_path: [path]
-     focus_area: [focus]
-   ```
+```bash
+python scripts/state_manager.py init "$plugin_path" --focus "$focus_area" --mode standard
+```
 
-3. **Store Analysis Results**
-   Extract from analyzer output:
-   - `patterns_detected`: Current SOTA patterns in use
-   - `violations`: Four Laws violations found
-   - `opportunities`: Improvement opportunities by category
-   - `metrics`: Agent count, tier compliance, etc.
+### Phase 1b: File Discovery (I/O Phase)
 
-   Store in state:
-   ```bash
-   python scripts/state_manager.py update "$plugin_path" analysis_summary "$ANALYSIS_JSON"
-   ```
+Launch file-discovery-executor to discover files and load priorities:
+
+```
+Task: Discover plugin files and load priorities
+Agent: coordinator-internal/phases/file-discovery-executor.md
+Prompt:
+  plugin_path: [path]
+  patterns: ["**/*.md", "**/*.json"]
+```
+
+This executor:
+- Discovers all plugin files (via Glob)
+- Registers file references in cache
+- Loads priority files (plugin.json, CLAUDE.md, entry agents)
+- Returns file_refs summary
+
+### Phase 1c: Analysis (Pure Analysis Phase)
+
+Launch analysis-executor to analyze cached data:
+
+```
+Task: Analyze plugin structure from cache
+Agent: coordinator-internal/phases/analysis-executor.md
+Prompt:
+  plugin_path: [path]
+  focus_area: [focus]
+```
+
+This executor:
+- Accesses files from cache only (NO direct I/O)
+- Lazy loads additional files as needed
+- Launches plugin-analyzer for deep analysis
+- Stores results in state
 
 ## Output
 

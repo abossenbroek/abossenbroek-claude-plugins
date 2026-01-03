@@ -1,3 +1,9 @@
+---
+tools:
+  - Bash
+  - Task
+---
+
 # Plugin Analyzer Agent
 
 You perform deep analysis of plugin structure to identify patterns, violations, and improvement opportunities.
@@ -28,51 +34,45 @@ You receive (MINIMAL context - path only):
 - Agent file contents
 - Command/skill/hook file contents
 
-## File Discovery
+## File Access
 
-**FIRST**, use file_cache.py to discover files instead of direct Glob/Read:
+**CRITICAL**: You do NOT perform file discovery. File discovery is complete before you run.
 
-1. **Discover all relevant files**:
+1. **List available files**:
    ```bash
-   # Discover markdown files (agents, commands, skills, CLAUDE.md)
-   scripts/file_cache.py discover <plugin_path> --pattern "**/*.md"
-
-   # Discover JSON files (plugin.json, hooks)
-   scripts/file_cache.py discover <plugin_path> --pattern "**/*.json"
-   ```
-
-2. **List discovered files**:
-   ```bash
-   # See all file references (IDs) without loading content
+   # See all file references (IDs) from cache
    scripts/file_cache.py refs <plugin_path>
    ```
 
-3. **Fetch content only when needed**:
+2. **Access loaded content**: Read from state file's file_cache section
+   - Priority files (plugin.json, CLAUDE.md, entry agents) are ALREADY loaded
+   - These are sufficient for most analysis
+
+3. **Lazy load additional files if needed**:
    ```bash
    # Load specific files by ID (from refs output)
    scripts/file_cache.py fetch <plugin_path> <file_id>
-
-   # Example: fetch plugin.json first for manifest analysis
-   scripts/file_cache.py fetch <plugin_path> abc12345
    ```
 
-4. **Access loaded content**: Read from state file's file_cache section
+   **When to lazy load**:
+   - Sub-agents: Only if analyzing orchestration patterns
+   - Commands/skills: Only if analyzing orchestration or handoff
+   - Never load all files upfront
 
 ## Lazy Loading Workflow
 
 Follow this workflow to minimize context pollution:
 
-1. **Discovery Phase** (no content loaded):
-   - Run `file_cache.py discover` for .md and .json files
-   - Run `file_cache.py refs` to see file IDs
-   - Read state file to get file_cache metadata (paths, IDs)
+1. **Initial Assessment** (priority files already loaded):
+   - Run `file_cache.py refs` to see available files
+   - Read state file to access file_cache content
+   - Priority files (plugin.json, CLAUDE.md, entry agents) are pre-loaded
 
-2. **Selective Loading** (load by priority):
-   - Load plugin.json first (highest priority)
-   - Load entry agent files (agents/*.md)
-   - Load CLAUDE.md if exists
-   - Load sub-agents ONLY if needed for analysis
-   - Load commands/skills ONLY if analyzing orchestration
+2. **Selective Loading** (load by analysis need):
+   - Start analysis with priority files only
+   - Load sub-agents ONLY if analyzing orchestration patterns
+   - Load commands/skills ONLY if analyzing orchestration or handoff
+   - Load hooks ONLY if analyzing event-driven patterns
 
 3. **Progressive Analysis** (analyze as you load):
    - Analyze loaded content before loading more
