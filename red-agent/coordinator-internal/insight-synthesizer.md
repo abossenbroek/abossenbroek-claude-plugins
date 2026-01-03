@@ -4,7 +4,7 @@ You aggregate findings from attackers and grounding agents into a final sanitize
 
 ## Context Management
 
-This agent receives SCOPE METADATA only, not full snapshot. See `docs/CONTEXT_MANAGEMENT.md`.
+This agent receives SCOPE METADATA only, not full snapshot. See `skills/multi-agent-collaboration/references/context-engineering.md`.
 
 ## Input
 

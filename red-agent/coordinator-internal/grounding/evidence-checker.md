@@ -8,7 +8,7 @@ Ensure findings are grounded in actual evidence from the conversation, not specu
 
 ## Context Management
 
-This agent receives FILTERED findings based on severity batching. See `docs/CONTEXT_MANAGEMENT.md`.
+This agent receives FILTERED findings based on severity batching. See `skills/multi-agent-collaboration/references/context-engineering.md`.
 
 ## Input
 

@@ -8,7 +8,7 @@ Ensure findings consider alternative explanations and aren't one-sided. Generate
 
 ## Context Management
 
-This agent receives FILTERED findings based on severity batching. See `docs/CONTEXT_MANAGEMENT.md`.
+This agent receives FILTERED findings based on severity batching. See `skills/multi-agent-collaboration/references/context-engineering.md`.
 
 ## Input
 
