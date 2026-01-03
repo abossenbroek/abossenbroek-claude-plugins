@@ -1,7 +1,8 @@
 """Pydantic models for PR analysis and diff processing."""
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .validators import validate_finding_id
 
@@ -75,7 +76,9 @@ class FileAnalysis(BaseModel):
     path: str = Field(min_length=1, description="File path relative to repo root")
     risk_level: Literal["high", "medium", "low"]
     risk_score: float = Field(ge=0.0, le=1.0, description="Risk score for this file")
-    change_summary: str = Field(min_length=1, description="Brief description of changes")
+    change_summary: str = Field(
+        min_length=1, description="Brief description of changes"
+    )
     risk_factors: list[str] = Field(
         default_factory=list, description="Specific risk factors identified"
     )
@@ -111,9 +114,7 @@ class PatternDetected(BaseModel):
     affected_files: list[str] = Field(
         default_factory=list, description="File IDs exhibiting this pattern"
     )
-    risk_implication: str = Field(
-        min_length=1, description="Why this pattern matters"
-    )
+    risk_implication: str = Field(min_length=1, description="Why this pattern matters")
 
 
 class FocusArea(BaseModel):
@@ -174,7 +175,9 @@ class CodeFindingTarget(BaseModel):
     line_numbers: list[int] = Field(
         default_factory=list, description="Line numbers affected"
     )
-    diff_snippet: str = Field(min_length=1, description="Diff snippet showing the issue")
+    diff_snippet: str = Field(
+        min_length=1, description="Diff snippet showing the issue"
+    )
     function_name: str | None = Field(
         default=None, description="Function name if applicable"
     )
@@ -186,12 +189,8 @@ class CodeFindingEvidence(BaseModel):
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
     type: str = Field(min_length=1, description="Type of evidence")
-    description: str | None = Field(
-        default=None, description="Description of the flaw"
-    )
-    code_quote: str | None = Field(
-        default=None, description="Problematic code snippet"
-    )
+    description: str | None = Field(default=None, description="Description of the flaw")
+    code_quote: str | None = Field(default=None, description="Problematic code snippet")
     assumption: str | None = Field(
         default=None, description="Hidden assumption in the code"
     )
@@ -209,7 +208,9 @@ class CodeAttackApplied(BaseModel):
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
     style: str = Field(min_length=1, description="Attack style used")
-    probe: str = Field(min_length=1, description="Scenario or input that triggers issue")
+    probe: str = Field(
+        min_length=1, description="Scenario or input that triggers issue"
+    )
 
 
 class CodeFindingImpact(BaseModel):
@@ -244,7 +245,8 @@ class CodeAttackerFinding(BaseModel):
 
     id: str = Field(min_length=1, description="Finding ID (LE-NNN, AG-NNN, EH-NNN)")
     category: str = Field(
-        min_length=1, description="Category: logic-errors, assumption-gaps, edge-case-handling"
+        min_length=1,
+        description="Category: logic-errors, assumption-gaps, edge-case-handling",
     )
     severity: str = Field(min_length=1, description="Severity level")
     title: str = Field(min_length=1, description="Short descriptive title")
@@ -252,7 +254,9 @@ class CodeAttackerFinding(BaseModel):
     evidence: CodeFindingEvidence
     attack_applied: CodeAttackApplied
     impact: CodeFindingImpact
-    recommendation: str = Field(min_length=10, description="Specific fix with code suggestion")
+    recommendation: str = Field(
+        min_length=10, description="Specific fix with code suggestion"
+    )
     confidence: float = Field(ge=0.0, le=1.0, description="Confidence in finding")
 
     @field_validator("id")
@@ -285,9 +289,7 @@ class CodePatternDetected(BaseModel):
     files_affected: list[str] = Field(
         default_factory=list, description="Files exhibiting this pattern"
     )
-    description: str = Field(
-        min_length=1, description="Cross-cutting observation"
-    )
+    description: str = Field(min_length=1, description="Cross-cutting observation")
     systemic_recommendation: str | None = Field(
         default=None, description="How to address pattern"
     )
@@ -315,7 +317,9 @@ class CodeAttackResults(BaseModel):
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
-    attack_type: str = Field(min_length=1, description="Should be 'code-reasoning-attacker'")
+    attack_type: str = Field(
+        min_length=1, description="Should be 'code-reasoning-attacker'"
+    )
     categories_probed: list[str] = Field(
         default_factory=list, description="Categories analyzed"
     )
