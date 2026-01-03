@@ -20,6 +20,18 @@
       "source": "./red-agent",
       "category": "security",
       "tags": ["security", "red-team", "adversarial", "analysis"]
+    },
+    {
+      "name": "context-engineering",
+      "version": "1.0.0",
+      "description": "Production-grade context engineering tool for expert LLM engineers. Analyzes and improves Claude Code plugins using SOTA orchestration patterns - Four Laws, tiered fidelity, severity batching, and firewall architectures.",
+      "author": {
+        "name": "Context Engineering Team",
+        "email": "abossenbroek@users.noreply.github.com"
+      },
+      "source": "./context-engineering",
+      "category": "development",
+      "tags": ["context-engineering", "optimization", "multi-agent", "orchestration"]
     }
   ]
 }

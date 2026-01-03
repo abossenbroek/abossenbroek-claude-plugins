@@ -1,0 +1,27 @@
+{
+  "name": "context-engineering",
+  "version": "1.0.0",
+  "description": "Production-grade context engineering tool for expert LLM engineers. Analyzes and improves plugin architectures using SOTA orchestration patterns - Four Laws of Context Management, tiered fidelity, severity-batched grounding, and firewall architectures.",
+  "author": {
+    "name": "Context Engineering Team"
+  },
+  "commands": {
+    "improve-plugin": {
+      "source": "./commands/improve-plugin.md"
+    },
+    "optimize-plan": {
+      "source": "./commands/optimize-plan.md"
+    },
+    "audit-context": {
+      "source": "./commands/audit-context.md"
+    },
+    "generate-handoffs": {
+      "source": "./commands/generate-handoffs.md"
+    }
+  },
+  "agents": [
+    "./agents/improve-coordinator.md",
+    "./agents/plan-coordinator.md",
+    "./agents/audit-coordinator.md"
+  ]
+}
