@@ -20,6 +20,16 @@ from .findings import (
     Pattern,
     RiskCategory,
 )
+from .fix_orchestration import (
+    FixApplicatorOutput,
+    FixCommitterOutput,
+    FixOrchestratorOutput,
+    FixPhaseCoordinatorOutput,
+    FixPlanV2Output,
+    FixReaderOutput,
+    FixRedTeamerOutput,
+    FixValidatorOutput,
+)
 from .outputs import (
     # AskUserQuestion-compatible models
     AskUserQuestion,
@@ -152,10 +162,18 @@ __all__ = [
     "FindingTarget",
     "FindingWithFixes",
     "FindingsByLevel",
+    "FixApplicatorOutput",
+    "FixCommitterOutput",
     "FixCoordinatorAskUserOutput",
     "FixCoordinatorOutput",
     "FixOption",
+    "FixOrchestratorOutput",
+    "FixPhaseCoordinatorOutput",
+    "FixPlanV2Output",
     "FixPlannerOutput",
+    "FixReaderOutput",
+    "FixRedTeamerOutput",
+    "FixValidatorOutput",
     "FocusArea",
     "GroundingAssessment",
     "GroundingIssue",

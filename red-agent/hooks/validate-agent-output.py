@@ -13,6 +13,7 @@ Pydantic models. On failure, blocks with error details so the coordinator
 can retry the sub-agent. On success, passes silently.
 """
 
+import contextlib
 import json
 import re
 import sys
@@ -20,6 +21,21 @@ from typing import Any
 
 import yaml
 from pydantic import BaseModel, Field, ValidationError, field_validator
+
+# Import fix orchestration models from centralized location
+# Fallback for when running hook directly (not as package)
+with contextlib.suppress(ImportError):
+    from red_agent.models import (
+        FixApplicatorOutput,
+        FixCommitterOutput,
+        FixOrchestratorOutput,
+        FixPhaseCoordinatorOutput,
+        FixPlanV2Output,
+        FixReaderOutput,
+        FixRedTeamerOutput,
+        FixValidatorOutput,
+        QuestionBatch,
+    )
 
 # ============================================================================
 # Inline Pydantic Models (subset needed for validation)
@@ -200,77 +216,8 @@ class FixCoordinatorAskUserOutput(BaseModel):
     finding_details: list[FindingDetail] = Field(default_factory=list)
 
 
-# New fix orchestration models
-class FixReaderOutput(BaseModel):
-    """Output from fix-reader agent."""
-
-    finding_id: str
-    parsed_intent: str
-    context_hints: list[str] = Field(default_factory=list)
-
-
-class FixPlanV2Output(BaseModel):
-    """Output from fix-planner-v2 agent."""
-
-    finding_id: str
-    fix_plan: dict[str, Any]  # Contains changes, execution_order, risks
-
-
-class FixRedTeamerOutput(BaseModel):
-    """Output from fix-red-teamer agent."""
-
-    finding_id: str
-    validation: dict[str, Any]  # Contains addresses_issue, is_minimal, etc.
-    approved: bool
-    adjusted_plan: dict[str, Any] | None = None
-
-
-class FixApplicatorOutput(BaseModel):
-    """Output from fix-applicator agent."""
-
-    finding_id: str
-    applied_changes: dict[str, Any]  # Contains file, diff, etc.
-    success: bool
-    error: str | None = None
-
-
-class FixCommitterOutput(BaseModel):
-    """Output from fix-committer agent."""
-
-    finding_id: str
-    commit_result: (
-        dict[str, Any] | None
-    )  # Contains commit_hash, files_committed, message
-    success: bool
-    error: str | None = None
-
-
-class FixValidatorOutput(BaseModel):
-    """Output from fix-validator agent."""
-
-    finding_id: str
-    commit_hash: str
-    validation_result: dict[str, Any]  # Contains tests_passed, lint_passed, etc.
-
-
-class FixPhaseCoordinatorOutput(BaseModel):
-    """Output from fix-phase-coordinator agent."""
-
-    finding_id: str
-    status: str  # success | failed
-    commit_hash: str | None = None
-    files_changed: list[str] = Field(default_factory=list)
-    validation: str | None = None
-    retry_count: int = Field(ge=0, le=2)
-    error: str | None = None
-    revert_command: str | None = None
-
-
-class FixOrchestratorOutput(BaseModel):
-    """Output from fix-orchestrator agent."""
-
-    execution_summary: dict[str, Any] | None = None  # After execution
-    question_batches: list[QuestionBatch] | None = None  # If interactive mode
+# Fix orchestration models imported from red_agent.models.fix_orchestration
+# (Lines 204-275 removed - now using centralized models)
 
 
 # ============================================================================
