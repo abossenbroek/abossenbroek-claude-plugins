@@ -8,7 +8,13 @@ Provide comprehensive analysis of a Claude Code plugin's architecture, identifyi
 
 ## Context Management
 
-This is a Phase 1 agent that receives FULL context - the complete plugin contents for initial analysis.
+This is a Phase 1 agent that uses LAZY LOADING via file_cache:
+- Receives: plugin_path, focus_area, audit_mode (MINIMAL context)
+- Discovers: All plugin files via file_cache.py discover
+- Loads: Only files needed for analysis via file_cache.py fetch
+- Accesses: Content from state file's mutable.file_cache section
+
+**Context Tier**: SELECTIVE (load only what's needed for current analysis phase)
 
 ## Input
 
@@ -24,29 +30,59 @@ You receive (MINIMAL context - path only):
 
 ## File Discovery
 
-**FIRST**, use Glob and Read to fetch plugin contents:
+**FIRST**, use file_cache.py to discover files instead of direct Glob/Read:
 
-1. **Find plugin.json**:
-   ```
-   Glob: plugin_path/.claude-plugin/plugin.json
-   OR: plugin_path/**/plugin.json
-   ```
+1. **Discover all relevant files**:
+   ```bash
+   # Discover markdown files (agents, commands, skills, CLAUDE.md)
+   scripts/file_cache.py discover <plugin_path> --pattern "**/*.md"
 
-2. **Find agent files**:
-   ```
-   Glob: plugin_path/agents/*.md
-   Glob: plugin_path/coordinator-internal/**/*.md
+   # Discover JSON files (plugin.json, hooks)
+   scripts/file_cache.py discover <plugin_path> --pattern "**/*.json"
    ```
 
-3. **Find other files**:
-   ```
-   Glob: plugin_path/commands/*.md
-   Glob: plugin_path/skills/**/*.md
-   Glob: plugin_path/hooks/*.json
-   Glob: plugin_path/CLAUDE.md
+2. **List discovered files**:
+   ```bash
+   # See all file references (IDs) without loading content
+   scripts/file_cache.py refs <plugin_path>
    ```
 
-4. **Read all discovered files** using the Read tool
+3. **Fetch content only when needed**:
+   ```bash
+   # Load specific files by ID (from refs output)
+   scripts/file_cache.py fetch <plugin_path> <file_id>
+
+   # Example: fetch plugin.json first for manifest analysis
+   scripts/file_cache.py fetch <plugin_path> abc12345
+   ```
+
+4. **Access loaded content**: Read from state file's file_cache section
+
+## Lazy Loading Workflow
+
+Follow this workflow to minimize context pollution:
+
+1. **Discovery Phase** (no content loaded):
+   - Run `file_cache.py discover` for .md and .json files
+   - Run `file_cache.py refs` to see file IDs
+   - Read state file to get file_cache metadata (paths, IDs)
+
+2. **Selective Loading** (load by priority):
+   - Load plugin.json first (highest priority)
+   - Load entry agent files (agents/*.md)
+   - Load CLAUDE.md if exists
+   - Load sub-agents ONLY if needed for analysis
+   - Load commands/skills ONLY if analyzing orchestration
+
+3. **Progressive Analysis** (analyze as you load):
+   - Analyze loaded content before loading more
+   - Only fetch additional files if analysis requires them
+   - Use file IDs in intermediate results instead of content
+
+4. **Token Management**:
+   - Check token_estimate before loading large files
+   - Skip loading if file not relevant to focus_area
+   - Reference files by ID in output when possible
 
 ## Your Task
 
