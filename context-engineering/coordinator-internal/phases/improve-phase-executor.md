@@ -27,7 +27,17 @@ Receives via prompt:
    ```
    Extract `analysis_summary` for selective context.
 
-2. **Launch Improvers Based on Focus Area**
+2. **Filter File References by Focus Area**
+
+   Before launching each improver, filter file_refs to pass only relevant files:
+
+   ```bash
+   python scripts/file_cache.py get_refs_by_focus "$plugin_path" "$focus_area"
+   ```
+
+   This reduces context duplication by ~2x by passing only files matching the focus area patterns.
+
+3. **Launch Improvers Based on Focus Area**
 
    **If focus_area = "context"**:
    ```
@@ -36,6 +46,7 @@ Receives via prompt:
    Prompt:
      analysis_summary: [from state - violations, opportunities for context]
      focus_area: context
+     file_refs: [filtered by "context" patterns]
    ```
 
    **If focus_area = "orchestration"**:
@@ -45,6 +56,7 @@ Receives via prompt:
    Prompt:
      analysis_summary: [from state - violations, opportunities for orchestration]
      focus_area: orchestration
+     file_refs: [filtered by "orchestration" patterns]
    ```
 
    **If focus_area = "handoff"**:
@@ -54,15 +66,16 @@ Receives via prompt:
    Prompt:
      analysis_summary: [from state - violations, opportunities for handoff]
      focus_area: handoff
+     file_refs: [filtered by "handoff" patterns]
    ```
 
    **If focus_area = "all"**:
-   Launch ALL THREE improvers IN PARALLEL with same analysis_summary.
+   Launch ALL THREE improvers IN PARALLEL, each with focus-filtered file_refs.
 
-3. **Collect Improvements**
+4. **Collect Improvements**
    Aggregate improvements from all launched improvers.
 
-4. **Store Improvements in State**
+5. **Store Improvements in State**
    ```bash
    python scripts/state_manager.py update "$plugin_path" improvements "$IMPROVEMENTS_JSON"
    ```
@@ -87,9 +100,12 @@ improvements_generated:
 - **Reads**: `mutable.analysis_summary` (PluginAnalysis)
 - **Writes**: `mutable.improvements` (list of improvements with IDs)
 
-## Parallelism Trade-off
+## Focus-Based Filtering (CM-001)
 
-When focus_area is "all", three improvers run IN PARALLEL and each receives the full analysis_summary. This is an intentional trade-off:
-- **Benefit**: ~3x faster execution
-- **Cost**: ~2x context duplication
-- **Justification**: Speed gain outweighs token cost for typical plugin sizes (<20K tokens)
+Each improver receives ONLY files relevant to its focus area:
+- **context**: agents/*.md, coordinator-internal/*.md, skills/**/*.md
+- **orchestration**: agents/*.md, coordinator-internal/*.md, hooks/*.json
+- **handoff**: agents/*.md, hooks/*.json, coordinator-internal/*.md, scripts/*.py
+- **all**: All three improvers run in parallel, each with their own filtered refs
+
+This reduces context duplication by ~2x compared to passing all files to all improvers.

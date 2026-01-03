@@ -8,19 +8,23 @@ Transform analysis findings into concrete, applicable improvements that reduce t
 
 ## Context Management
 
-This agent receives SELECTIVE context - analysis summary plus files relevant to the focus area.
+This agent receives SELECTIVE context - analysis summary plus files filtered by focus area.
 
 ## Input
 
-You receive (SELECTIVE context):
+You receive (SELECTIVE context - FOCUS FILTERED):
 - `analysis_summary`: Key findings from plugin-analyzer
 - `focus_area`: context (this agent's specialty)
-- `relevant_files`: Only files needing context improvements
+- `file_refs`: ONLY files matching context patterns:
+  - agents/*.md
+  - coordinator-internal/*.md
+  - skills/**/*.md
 - `violations`: Four Laws violations to address
 
-**NOT provided**:
+**NOT provided** (context isolation via focus-based filtering):
 - Full plugin contents
-- Files without context issues
+- hooks/*.json files
+- scripts/*.py files (except validation scripts)
 - Orchestration or handoff analysis
 
 ## Your Task

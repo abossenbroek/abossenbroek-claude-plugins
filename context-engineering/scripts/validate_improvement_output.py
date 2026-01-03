@@ -91,7 +91,7 @@ def validate_list(
     return len(all_errors) == 0, all_errors
 
 
-def validate_output(
+def validate_output(  # noqa: PLR0911
     yaml_content: str, output_type: str | None = None
 ) -> tuple[bool, list[str]]:
     """Validate YAML output against appropriate schema.
@@ -158,10 +158,7 @@ def main() -> int:
     args = parser.parse_args()
 
     # Read input
-    if args.file:
-        content = Path(args.file).read_text()
-    else:
-        content = sys.stdin.read()
+    content = Path(args.file).read_text() if args.file else sys.stdin.read()
 
     # Validate
     is_valid, errors = validate_output(content, args.type)

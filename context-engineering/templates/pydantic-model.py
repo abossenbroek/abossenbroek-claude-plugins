@@ -94,28 +94,30 @@ class ExampleOutput(BaseModel):
 # Usage Example
 # =============================================================================
 
-# To validate output:
-#
-# import yaml
-# from pydantic import ValidationError
-#
-# yaml_output = """
-# agent: example-agent
-# items:
-#   - id: EX-001
-#     description: Example item
-#     confidence: 0.9
-# summary:
-#   total_items: 1
-#   by_category:
-#     example: 1
-# """
-#
-# try:
-#     data = yaml.safe_load(yaml_output)
-#     validated = ExampleOutput(**data)
-#     print("Valid output!")
-# except ValidationError as e:
-#     print("Validation errors:")
-#     for error in e.errors():
-#         print(f"  {error['loc']}: {error['msg']}")
+"""
+To validate output:
+
+import yaml
+from pydantic import ValidationError
+
+yaml_output = \"\"\"
+agent: example-agent
+items:
+  - id: EX-001
+    description: Example item
+    confidence: 0.9
+summary:
+  total_items: 1
+  by_category:
+    example: 1
+\"\"\"
+
+try:
+    data = yaml.safe_load(yaml_output)
+    validated = ExampleOutput(**data)
+    print("Valid output!")
+except ValidationError as e:
+    print("Validation errors:")
+    for error in e.errors():
+        print(f"  {error['loc']}: {error['msg']}")
+"""

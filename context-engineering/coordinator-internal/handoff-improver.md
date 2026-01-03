@@ -8,20 +8,26 @@ Transform context flow analysis into concrete handoff improvements that minimize
 
 ## Context Management
 
-This agent receives SELECTIVE context - context flow map plus handoff points.
+This agent receives SELECTIVE context - context flow map plus files filtered by focus area.
 
 ## Input
 
-You receive (SELECTIVE context):
+You receive (SELECTIVE context - FOCUS FILTERED):
 - `context_flow_map`: Flow edges and redundancies from context-flow-mapper
 - `focus_area`: handoff (this agent's specialty)
+- `file_refs`: ONLY files matching handoff patterns:
+  - agents/*.md
+  - hooks/*.json
+  - coordinator-internal/*.md
+  - scripts/*.py
 - `handoff_points`: Specific transitions to optimize
 - `current_handoffs`: What's currently passed at each transition
 
-**NOT provided**:
-- Full agent file contents
-- Context optimization issues
-- Orchestration issues
+**NOT provided** (context isolation via focus-based filtering):
+- Full agent file contents (only handoff-relevant sections)
+- skills/**/*.md files
+- Context optimization issues (handled by context-optimizer)
+- Orchestration issues (handled by orchestration-improver)
 
 ## Your Task
 

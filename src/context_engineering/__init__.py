@@ -31,31 +31,31 @@ from .models import (
 )
 
 __all__ = [
-    # Enums
-    "ContextTier",
-    "ImprovementType",
-    "PatternType",
-    "RiskLevel",
-    # Analysis
-    "ContextFlowMap",
-    "FlowEdge",
-    "PatternViolation",
-    "PluginAnalysis",
-    "PluginMetrics",
-    "PlanAnalysis",
-    "PlanPhase",
-    # Improvements
-    "ContextImprovement",
-    "HandoffImprovement",
-    "OrchestrationImprovement",
-    # Grounding
-    "ConsistencyCheck",
-    "PatternCompliance",
-    "RiskAssessment",
-    "TokenEstimate",
     # Synthesis
     "BeforeAfterComparison",
+    # Grounding
+    "ConsistencyCheck",
+    # Analysis
+    "ContextFlowMap",
+    # Improvements
+    "ContextImprovement",
+    # Enums
+    "ContextTier",
     "FileChange",
+    "FlowEdge",
+    "HandoffImprovement",
     "ImprovementReport",
+    "ImprovementType",
+    "OrchestrationImprovement",
+    "PatternCompliance",
+    "PatternType",
+    "PatternViolation",
+    "PlanAnalysis",
+    "PlanPhase",
+    "PluginAnalysis",
+    "PluginMetrics",
+    "RiskAssessment",
+    "RiskLevel",
+    "TokenEstimate",
     "TokenMetrics",
 ]

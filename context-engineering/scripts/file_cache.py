@@ -10,6 +10,7 @@ and lazy loading content to reduce context pollution in sub-agents.
 
 import argparse
 import fcntl
+import fnmatch
 import hashlib
 import sys
 from pathlib import Path
@@ -33,6 +34,19 @@ except ImportError:
 
 
 STATE_FILENAME = ".context-engineering-state.yaml"
+
+# Focus area patterns for filtering file_refs
+FOCUS_PATTERNS = {
+    "context": ["agents/*.md", "coordinator-internal/*.md", "skills/**/*.md"],
+    "orchestration": ["agents/*.md", "coordinator-internal/*.md", "hooks/*.json"],
+    "handoff": [
+        "agents/*.md",
+        "hooks/*.json",
+        "coordinator-internal/*.md",
+        "scripts/*.py",
+    ],
+    "all": ["**/*.md", "**/*.json", "**/*.py"],
+}
 
 
 class FileCache:
@@ -273,6 +287,81 @@ class FileCache:
             finally:
                 self._release_lock(f)
 
+    def get_refs_by_focus(self, focus_area: str) -> None:
+        """Get file references filtered by focus area.
+
+        Args:
+            focus_area: Focus area (context|orchestration|handoff|all)
+        """
+        if focus_area not in FOCUS_PATTERNS:
+            print(f"[ERROR] Invalid focus area: {focus_area}")
+            print(f"[ERROR] Valid options: {', '.join(FOCUS_PATTERNS.keys())}")
+            sys.exit(1)
+
+        if not self.state_file.exists():
+            print(f"[ERROR] State file not found: {self.state_file}")
+            sys.exit(1)
+
+        with self.state_file.open("r") as f:
+            self._acquire_lock(f)
+            try:
+                data = yaml.safe_load(f)
+                state = ContextEngineeringState(**data)
+
+                if not state.mutable.file_cache:
+                    print("[WARN] No files in cache")
+                    return
+
+                patterns = FOCUS_PATTERNS[focus_area]
+                matched_refs = []
+
+                # Filter file_refs by matching against patterns
+                for ref in state.mutable.file_cache.values():
+                    file_path = Path(ref.path)
+                    # Get relative path from plugin_path
+                    try:
+                        rel_path = file_path.relative_to(self.plugin_path)
+                    except ValueError:
+                        # File is outside plugin_path, skip
+                        continue
+
+                    # Check if relative path matches any pattern
+                    rel_path_str = str(rel_path)
+                    for pattern in patterns:
+                        if fnmatch.fnmatch(rel_path_str, pattern):
+                            matched_refs.append(ref)
+                            break
+
+                if not matched_refs:
+                    print(f"[WARN] No files matching focus area '{focus_area}'")
+                    return
+
+                count = len(matched_refs)
+                print(f"[OK] Found {count} files for focus area '{focus_area}':")
+                print()
+
+                total_tokens = 0
+                for ref in matched_refs:
+                    path = Path(ref.path)
+                    status = "loaded" if ref.loaded else "unloaded"
+                    token_info = (
+                        f" ({ref.token_estimate} tokens)"
+                        if ref.loaded
+                        else " (not loaded)"
+                    )
+                    print(f"  {ref.id}: {path.name} [{status}]{token_info}")
+                    print(f"    Path: {ref.path}")
+
+                    if ref.loaded:
+                        total_tokens += ref.token_estimate
+
+                print()
+                print(f"[OK] Total files: {len(matched_refs)}")
+                if any(r.loaded for r in matched_refs):
+                    print(f"[OK] Total tokens (loaded): {total_tokens}")
+            finally:
+                self._release_lock(f)
+
 
 def main() -> None:
     """Main CLI entry point."""
@@ -308,6 +397,20 @@ def main() -> None:
         "--unloaded-only", action="store_true", help="Show only unloaded files"
     )
 
+    # Get refs by focus command
+    get_refs_by_focus_parser = subparsers.add_parser(
+        "get_refs_by_focus", help="Get file references filtered by focus area"
+    )
+    get_refs_by_focus_parser.add_argument(
+        "plugin_path", type=Path, help="Plugin directory path"
+    )
+    get_refs_by_focus_parser.add_argument(
+        "focus_area",
+        type=str,
+        choices=list(FOCUS_PATTERNS.keys()),
+        help="Focus area to filter by",
+    )
+
     args = parser.parse_args()
 
     if not args.command:
@@ -326,6 +429,8 @@ def main() -> None:
                 print("[ERROR] Cannot use --loaded-only and --unloaded-only together")
                 sys.exit(1)
             cache.refs(loaded_only=args.loaded_only, unloaded_only=args.unloaded_only)
+        elif args.command == "get_refs_by_focus":
+            cache.get_refs_by_focus(focus_area=args.focus_area)
     except ValidationError as e:
         print(f"[ERROR] Validation error: {e}")
         sys.exit(1)

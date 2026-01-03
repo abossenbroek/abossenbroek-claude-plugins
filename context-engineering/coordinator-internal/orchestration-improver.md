@@ -8,18 +8,24 @@ Transform analysis findings into concrete orchestration improvements that create
 
 ## Context Management
 
-This agent receives SELECTIVE context - analysis summary plus agent hierarchy information.
+This agent receives SELECTIVE context - analysis summary plus files filtered by focus area.
 
 ## Input
 
-You receive (SELECTIVE context):
+You receive (SELECTIVE context - FOCUS FILTERED):
 - `analysis_summary`: Key findings from plugin-analyzer
 - `focus_area`: orchestration (this agent's specialty)
+- `file_refs`: ONLY files matching orchestration patterns:
+  - agents/*.md
+  - coordinator-internal/*.md
+  - hooks/*.json
 - `agent_hierarchy`: Current agent structure and relationships
 - `patterns_detected`: SOTA patterns found in analysis
 
-**NOT provided**:
+**NOT provided** (context isolation via focus-based filtering):
 - Full agent file contents
+- skills/**/*.md files
+- scripts/*.py files (except orchestration-related)
 - Context-specific issues
 - Handoff-specific issues
 
