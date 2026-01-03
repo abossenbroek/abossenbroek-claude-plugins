@@ -1,6 +1,8 @@
 # Claude Code Plugins Repository
 
-A collection of Claude Code plugins with strict validation infrastructure. This repository demonstrates best practices for plugin development with type-safe validation using Pydantic models.
+A collection of production-grade Claude Code plugins with strict validation infrastructure. This repository demonstrates best practices for plugin development with type-safe validation using Pydantic models.
+
+**Plugins**: See `red-agent/CLAUDE.md` and `context-engineering/CLAUDE.md` for plugin-specific documentation.
 
 ## Critical Rules
 
@@ -20,7 +22,7 @@ uv run pre-commit run --all-files
 uv run pytest tests/ -v
 ```
 
-**Why**: 79 tests validate the entire validation infrastructure. Untested changes break silently.
+**Why**: Comprehensive test coverage validates the entire infrastructure. Untested changes break silently.
 
 ### 3. Never Commit Without Verification
 
@@ -33,7 +35,11 @@ Before any commit:
 
 ### 4. Use Pydantic Models for All Validation
 
-Agent output validation MUST use the Pydantic models in `red-agent/models/`. Do not create ad-hoc validation logic.
+Agent output validation MUST use Pydantic models. Do not create ad-hoc validation logic.
+
+**Model locations**:
+- Red-agent: `src/red_agent/models/`
+- Context-engineering: `src/context_engineering/models/`
 
 **Why**: Single source of truth. Manual validation diverges from the schema.
 
@@ -84,14 +90,24 @@ This repo uses feature branches. Main branch is protected.
 # Create feature branch
 git checkout -b feature/description
 
-# Make changes, then commit
+# Make changes, run validation chain, then commit
 git add -A
-git commit -m "Short description of change"
+git commit -m "feat(plugin): description"
 
 # Push and create PR
 git push -u origin feature/description
 gh pr create --title "Title" --body "Description"
 ```
+
+**Conventional Commit Types**:
+- `feat(plugin)`: New features, new agents, architectural improvements
+- `fix(plugin)`: Bug fixes, broken validation, test fixes
+- `refactor(plugin)`: Code restructuring without behavior change
+- `docs(plugin)`: ONLY for README/changelog updates
+- `test(plugin)`: Adding or modifying tests
+- `chore(plugin)`: Dependency updates, config changes
+
+**IMPORTANT**: Agent/prompt changes are `feat` or `fix`, NOT `docs`. Markdown files in `agents/`, `coordinator-internal/`, `commands/` are executable code, not documentation.
 
 ---
 
@@ -143,22 +159,33 @@ class TestValidateAttackerOutput:
 
 ```
 .
-├── .claude-plugin/          # Marketplace manifest
-│   └── marketplace.json     # Plugin registry for this repo
-├── .claude/                  # Claude Code settings
-│   └── settings.local.json  # Allowed permissions
-├── red-agent/               # Red team analysis plugin
-│   ├── .claude-plugin/      # Plugin manifest
-│   ├── agents/              # Entry-point agents (launched by Task tool)
-│   ├── commands/            # Slash commands (user-invocable)
-│   ├── coordinator-internal/# Sub-agents (NOT directly invocable)
-│   ├── models/              # Pydantic models for validation
-│   ├── scripts/             # Python validation tools
-│   └── skills/              # Reusable skill definitions
-├── schemas/                 # JSON schemas for config validation
-├── scripts/                 # Repo-level validation scripts
-└── tests/                   # pytest test suite
+├── .claude-plugin/               # Marketplace manifest
+│   └── marketplace.json          # Plugin registry for this repo
+├── .claude/                      # Claude Code settings
+│   └── settings.local.json       # Allowed permissions
+├── red-agent/                    # Red team analysis plugin (see red-agent/CLAUDE.md)
+│   ├── .claude-plugin/plugin.json
+│   ├── agents/                   # Entry coordinators (firewall boundary)
+│   ├── coordinator-internal/     # Sub-agents (isolated from main session)
+│   ├── commands/                 # Slash commands
+│   └── skills/                   # Reusable skill definitions
+├── context-engineering/          # Context optimization plugin (see context-engineering/CLAUDE.md)
+│   ├── .claude-plugin/plugin.json
+│   ├── agents/                   # Entry coordinators (firewall boundary)
+│   ├── coordinator-internal/     # Sub-agents + phase executors
+│   ├── commands/                 # Slash commands
+│   ├── hooks/                    # PostToolUse validation hooks
+│   ├── scripts/                  # State/cache management CLIs
+│   └── skills/                   # Reusable skill definitions
+├── src/                          # Python package source
+│   ├── red_agent/models/         # Pydantic models for red-agent
+│   └── context_engineering/models/ # Pydantic models for context-engineering
+├── schemas/                      # JSON schemas for config validation
+├── scripts/                      # Repo-level validation scripts
+└── tests/                        # pytest test suite (260+ tests)
 ```
+
+**Note**: For plugin-specific architecture, commands, and patterns, refer to the respective `CLAUDE.md` files. This keeps documentation co-located with implementation.
 
 ### Key Files
 
@@ -166,11 +193,12 @@ class TestValidateAttackerOutput:
 |------|---------|
 | `pyproject.toml` | Dependencies, ruff config, pytest config |
 | `.pre-commit-config.yaml` | Pre-commit hooks |
-| `red-agent/models/` | Pydantic models (source of truth for validation) |
-| `red-agent/scripts/validate_agent_output.py` | Runtime validator for agent outputs |
+| `src/*/models/` | Pydantic models (source of truth for validation) |
+| `*/hooks/validate-agent-output.py` | PostToolUse hook for type-safe validation |
 | `scripts/validate_plugin_schemas.py` | JSON schema validator for configs |
 | `scripts/validate_against_claude_code.py` | Claude Code schema validation (pre-push) |
 | `scripts/check_config_hygiene.py` | Hygiene checks (author emails, empty arrays, etc.) |
+| `*/CLAUDE.md` | Plugin-specific documentation (architecture, patterns, rules) |
 
 ---
 
@@ -207,14 +235,32 @@ class TestValidateAttackerOutput:
 
 ---
 
-## Common Tasks
+## Common Workflows
+
+### Standard Validation Chain
+
+After making changes, run this validation sequence:
+
+```bash
+# 1. Run tests
+uv run pytest tests/ -v
+
+# 2. Run pre-commit hooks
+uv run pre-commit run --all-files
+
+# 3. Validate plugins against Claude Code
+claude plugin validate ./red-agent
+claude plugin validate ./context-engineering
+```
+
+All three must pass before committing.
 
 ### Add a New Pydantic Model
 
-1. Create model in appropriate file under `red-agent/models/`
-2. Export from `red-agent/models/__init__.py`
-3. Add tests in `tests/test_pydantic_models.py`
-4. Run tests: `uv run pytest tests/test_pydantic_models.py -v`
+1. Create model in appropriate file under `src/*/models/`
+2. Export from `src/*/models/__init__.py`
+3. Add tests in `tests/test_*_models.py`
+4. Run validation chain (above)
 
 ### Add a New Validator
 
@@ -287,11 +333,26 @@ Test by loading the plugin in Claude Code to verify the schema is accepted.
 
 Use Pydantic models. Never create ad-hoc validation.
 
-### 5. Am I unsure about a schema field?
+### 5. Should I spawn an agent with Task tool?
+
+**YES - Spawn agents to prevent context pollution when:**
+- Task requires multiple files/rounds of analysis
+- Task has independent sub-tasks that can be parallelized
+- Task involves complex multi-step workflows
+- You're implementing a plan with compartmentalized fixes
+
+**NO - Work directly when:**
+- Task is a single straightforward edit
+- You have all context needed in current session
+- Task requires tight iteration/debugging loop
+
+**Pattern**: Main session = thin orchestrator, agents = focused workers with minimal context
+
+### 6. Am I unsure about a schema field?
 
 Check `sdk-tools.d.ts` in the Claude Code package for tool schemas. For plugin/marketplace schemas, test by loading in Claude Code.
 
-### 6. Could this affect users?
+### 7. Could this affect users?
 
 Consider backwards compatibility. Avoid breaking changes without explicit request.
 
@@ -347,28 +408,71 @@ This is the canonical reference for tool input schemas (AskUserQuestion, Bash, e
 
 ---
 
+## Agent Orchestration Patterns
+
+### When Executing Complex Plans
+
+For multi-fix implementations (like architectural refactors):
+
+**Orchestration Pattern**:
+1. **Main Session** = Thin orchestrator (routing only, minimal logic)
+2. **Implementation Agent** per fix:
+   - Receives minimal context (fix spec + file paths)
+   - Creates/modifies files
+   - Commits frequently (`wip: description`)
+   - Returns completion status
+3. **Validation Agent** after each fix:
+   - Receives success criteria + test commands
+   - Runs validation chain
+   - Returns PASS/FAIL + specific issues
+4. **Remediation Agent** if validation fails:
+   - Max 2 rounds before escalating to user
+   - Gets specific issues to fix
+
+**Dependency Management**:
+- Identify parallel vs sequential fixes
+- Launch independent fixes in parallel (single message, multiple Task calls)
+- Wait for dependencies before launching dependent fixes
+
+**Context Reduction**:
+- Each agent gets ONLY what it needs (not full codebase)
+- Use file references/IDs instead of full content
+- State/cache systems for data sharing between agents
+
+### Parallel Agent Spawning
+
+```python
+# CORRECT - Multiple agents in one message (parallel)
+"I'll spawn 3 agents in parallel"
+<Task for fix-1>
+<Task for fix-2>
+<Task for fix-3>
+
+# WRONG - Sequential spawning (slower)
+"Let me spawn agent 1"
+<Task for fix-1>
+[wait for response]
+"Now agent 2"
+<Task for fix-2>
+```
+
 ## Quick Reference
 
 ```bash
 # Install/update dependencies
 uv sync --all-extras
 
-# Run all tests
+# Standard validation chain (run after changes)
 uv run pytest tests/ -v
-
-# Run pre-commit
 uv run pre-commit run --all-files
-
-# Validate against Claude Code (runs on push)
-uv run python scripts/validate_against_claude_code.py
-# or directly:
 claude plugin validate ./red-agent
+claude plugin validate ./context-engineering
 
 # Fix ruff issues
 uv run ruff check --fix . && uv run ruff format .
 
-# Create commit
-git add -A && git commit -m "message"
+# Create commit (use correct type!)
+git add -A && git commit -m "feat(plugin): description"
 
 # Push (triggers pre-push Claude Code validation)
 git push && gh pr create
