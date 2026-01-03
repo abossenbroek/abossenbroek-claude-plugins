@@ -103,6 +103,51 @@ Based on your assigned styles, use these approaches:
 - `error-path-analysis`: Analyze error handling for leaks
 - `secret-scanning`: Search for hardcoded credentials
 
+## PAL-Enhanced Security Analysis (Optional)
+
+After generating initial security findings, if PAL (deepthink) is available, enhance CRITICAL and HIGH severity findings:
+
+**If pal_available == true (from input)**:
+
+For each finding with severity == CRITICAL or HIGH:
+
+1. Launch PAL deepthink agent:
+
+```
+Task: Launch PAL deepthink via Task tool
+Agent: pal-deepthink
+Prompt:
+  Analyze this security vulnerability in depth:
+
+  Finding: [finding.title]
+  Category: [finding.category]
+  Severity: [finding.severity]
+
+  Evidence:
+  ```
+  [code snippet from finding.evidence]
+  ```
+
+  Attack vector: [finding.attack_vector]
+
+  Questions:
+  - Is this truly exploitable in a real-world scenario?
+  - What is the actual impact if exploited?
+  - What mitigating factors exist?
+  - How confident should we be in this finding?
+```
+
+2. Wait for PAL deepthink output
+
+3. Enhance finding with PAL insights:
+   - Add `exploit_scenario` field from PAL analysis
+   - Adjust `confidence_score` based on PAL assessment
+   - Add `pal_enhanced: true` flag
+   - Add `pal_reasoning` field with PAL insights
+
+**If pal_available == false**:
+- Skip PAL enhancement (graceful degradation)
+
 ## Output Format
 
 ```yaml

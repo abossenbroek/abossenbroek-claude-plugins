@@ -250,6 +250,46 @@ file_count: [for context]
 
 Each returns: Grounding assessment with adjusted confidence scores.
 
+### PAL Challenge for Critical Findings (Optional, Deep Mode Only)
+
+After standard grounding completes, if PAL (challenge) is available and mode is deep, challenge CRITICAL findings:
+
+**If pal_available == true AND mode == "deep"**:
+
+For findings where severity == CRITICAL:
+
+1. After standard grounding completes, launch PAL challenge agent:
+
+```
+Task: Launch PAL challenge via Task tool
+Agent: pal-challenger
+Prompt:
+  Challenge the evidence for this critical finding:
+
+  Finding: [finding.title]
+  Evidence: [finding.evidence]
+  Grounding confidence: [grounding_result.confidence]
+
+  Questions:
+  - Is this evidence strong enough to support a CRITICAL severity?
+  - What could weaken this finding?
+  - What alternative explanations exist?
+  - Should we be more or less confident?
+```
+
+2. Wait for PAL challenge output
+
+3. Calculate final confidence:
+   - `final_confidence = min(grounding_confidence, pal_challenge_confidence)`
+
+4. Add to finding:
+   - `pal_challenged: true`
+   - `pal_challenge_reasoning: [PAL output summary]`
+   - `confidence_adjustment: [explanation of why confidence changed]`
+
+**If pal_available == false OR mode != "deep"**:
+- Skip PAL challenge (graceful degradation)
+
 ### Phase 5: Synthesis (SCOPE METADATA ONLY)
 
 Launch the pr-insight-synthesizer with SCOPE METADATA, not full diff.

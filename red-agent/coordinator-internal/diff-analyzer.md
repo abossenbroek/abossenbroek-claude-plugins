@@ -27,6 +27,53 @@ You receive:
 4. Detect cross-cutting patterns (e.g., error-handling-changes, api-modifications)
 5. Calculate risk scores and identify high-risk files
 
+## PAL-Enhanced Risk Validation (Optional)
+
+After completing the initial risk assessment, if PAL (deepthink/challenge) is available, enhance the analysis:
+
+**If pal_available == true (from input)**:
+
+1. Launch PAL challenge agent to validate risk assessment:
+
+```
+Task: Launch PAL challenge via Task tool
+Agent: pal-challenger
+Prompt:
+  Challenge this risk assessment:
+
+  Files analyzed: [list high-risk files with their scores]
+  Risk surface identified:
+    - [category 1]: [exposure level]
+    - [category 2]: [exposure level]
+
+  Risk rationale:
+    - [file 1]: [why high-risk - specific factors]
+    - [file 2]: [why high-risk - specific factors]
+
+  Question: Are these risk scores accurate? What vulnerabilities or risk factors am I missing?
+```
+
+2. Wait for PAL challenge output
+
+3. Adjust risk scores based on PAL feedback:
+   - If PAL identifies missed risks → increase relevant file scores
+   - If PAL finds overestimation → decrease scores with justification
+   - Document adjustments in pal_adjustments field
+
+4. Add to output:
+```yaml
+pal_enhanced: true
+pal_adjustments:
+  - file: [path]
+    original_score: [0.0-1.0]
+    adjusted_score: [0.0-1.0]
+    reason: [PAL feedback summary]
+```
+
+**If pal_available == false**:
+- Skip PAL enhancement (graceful degradation)
+- Add to output: `pal_enhanced: false`
+
 ## Output Format
 
 Return your analysis in this YAML structure:
