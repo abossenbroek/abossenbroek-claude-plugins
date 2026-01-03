@@ -216,13 +216,99 @@ class TestValidateAttackerOutput:
    - Catches issues that local schemas might miss
 
 3. **Pydantic Models (Runtime)**
-   - Located in `red-agent/models/`
+   - Located in `red-agent/models/` and `context-engineering/models/`
    - Used by `validate_agent_output.py` to validate agent outputs
    - Provides type-safe validation with clear error messages
 
 4. **Tests (CI)**
    - 165+ tests covering all validators
    - Run via `uv run pytest tests/ -v`
+
+### PostToolUse Hook Output Format
+
+All plugins use YAML format for hook decisions:
+
+**Success**:
+```yaml
+decision: continue
+```
+
+**Failure**:
+```yaml
+decision: block
+reason: |
+  Detailed error message
+  with field-level hints
+```
+
+**Rationale**: YAML is more LLM-native than JSON, handles multiline errors cleanly, and requires no escaping.
+
+### PostToolUse Hook Standards (Established 2025-01)
+
+All plugins should follow these standards for PostToolUse hooks:
+
+#### Output Format
+Hooks must return YAML (not JSON or exit codes):
+
+**Success**:
+```yaml
+decision: continue
+```
+
+**Failure**:
+```yaml
+decision: block
+reason: |
+  Detailed error message
+  with field-level hints
+```
+
+**Rationale**: YAML is more LLM-native, handles multiline errors cleanly, requires no escaping.
+
+#### Error Message Format
+Use `format_validation_error()` function in all hooks:
+
+```python
+def format_validation_error(error: dict[str, Any]) -> str:
+    """Format Pydantic validation error with actionable hints."""
+    location = ".".join(str(x) for x in error["loc"])
+    message = error["msg"]
+    error_type = error.get("type", "")
+
+    formatted = f"- {location}: {message}"
+
+    # Add context-specific hints
+    if "missing" in error_type:
+        formatted += f"\n  Hint: Add '{location}' field to output"
+    elif "enum" in error_type or "literal" in error_type:
+        formatted += "\n  Hint: Check valid values in model definition"
+    elif "type_error.float" in error_type or "greater_than" in error_type:
+        formatted += "\n  Hint: Value must be numeric in valid range"
+    elif "string_too_short" in error_type:
+        formatted += "\n  Hint: Field requires more content"
+
+    return formatted
+```
+
+#### Model Imports
+Hooks must import Pydantic models from `src/` (single source of truth):
+
+```python
+# Add src directory to path
+SCRIPT_DIR = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(SCRIPT_DIR / "src"))
+
+# Import from centralized models
+from plugin_name.models import ModelName
+```
+
+**Never duplicate models inline in hooks.**
+
+#### Testing Requirements
+All hooks must have:
+- Output format tests (YAML parseability, continue/block decisions)
+- Retry flow tests (validation failure → retry → success)
+- Error message parsing tests (field paths, hints, actionability)
 
 ### When to Use Each
 
@@ -270,17 +356,39 @@ All three must pass before committing.
 
 ### Fix a Failing Pre-commit
 
+**Workflow**:
+1. Run pre-commit to identify issues
+2. Auto-fix what's possible (ruff, formatting)
+3. Manually fix remaining issues
+4. Re-run to verify
+
 ```bash
 # See what's wrong
 uv run pre-commit run --all-files
 
-# Auto-fix ruff issues
+# Auto-fix ruff issues (most violations)
 uv run ruff check --fix .
 uv run ruff format .
 
-# Re-run to verify
+# Re-run to verify - check if any issues remain
 uv run pre-commit run --all-files
+
+# If line-length issues remain (E501), manually fix:
+# - Break long lines at logical points
+# - Use parentheses for implicit line continuation
+# - Keep strings readable
 ```
+
+**Common Auto-Fixable Issues**:
+- Unused imports (F401)
+- Missing trailing commas (COM812)
+- Import sorting (I001)
+- Whitespace issues (W291, W293)
+
+**Requires Manual Fix**:
+- Line too long (E501) - requires judgment on where to break
+- Complex logic issues (PLR0912, C901)
+- Missing type hints (ANN)
 
 ### Add a New Plugin
 
@@ -348,11 +456,39 @@ Use Pydantic models. Never create ad-hoc validation.
 
 **Pattern**: Main session = thin orchestrator, agents = focused workers with minimal context
 
-### 6. Am I unsure about a schema field?
+### 6. Should I break this into phases with multiple agents?
+
+**YES - Use phase-based orchestration when:**
+- Task has 5+ file modifications across different conceptual areas
+- Clear sequential dependencies (Phase A must complete before Phase B)
+- Significant parallelization opportunity (multiple independent sub-tasks)
+- Need for centralized verification/aggregation at the end
+
+**NO - Use simpler approaches when:**
+- Task has 1-4 related file modifications
+- All work can be done in parallel with no dependencies
+- Task is exploratory/research-focused
+- Single agent can handle the full context
+
+**Phase-Based Pattern**:
+```
+Main Session (Orchestrator)
+  ↓
+Spawn Phase 1 (blocking) → Spawn Phases 2-5 (parallel)
+  ↓                              ↓
+File Agents                  File Agents (each phase)
+```
+
+**Example Decision Tree**:
+- "Refactor validation hooks across 2 plugins" → Phase-based (Phase 1: refactor models, Phases 2-5: parallel format/test/docs changes)
+- "Add new validation model" → Direct implementation (single conceptual change)
+- "Fix bug in hook" → Direct implementation (focused scope)
+
+### 7. Am I unsure about a schema field?
 
 Check `sdk-tools.d.ts` in the Claude Code package for tool schemas. For plugin/marketplace schemas, test by loading in Claude Code.
 
-### 7. Could this affect users?
+### 8. Could this affect users?
 
 Consider backwards compatibility. Avoid breaking changes without explicit request.
 
@@ -455,6 +591,77 @@ For multi-fix implementations (like architectural refactors):
 "Now agent 2"
 <Task for fix-2>
 ```
+
+### Multi-Agent Orchestration for Complex Multi-Phase Tasks
+
+For tasks requiring multiple coordinated phases (like refactoring across plugins, comprehensive testing suites, or documentation updates):
+
+**Pattern**: Orchestrator → Phase Agents → File Agents
+
+1. **Orchestrator Agent** (main session):
+   - Thin coordinator that spawns phase agents
+   - Monitors for permission blocks
+   - Aggregates results
+   - Runs verification checklist
+
+2. **Phase Agents** (spawned by orchestrator):
+   - One agent per independent phase
+   - Each phase spawns its own file-specific agents
+   - Phases with dependencies run sequentially
+   - Phases without dependencies run in parallel
+
+3. **File Agents** (spawned by phase agents):
+   - One agent per file modification
+   - Spawn in parallel within each phase
+   - Focused, single-purpose modifications
+
+**Dependency Management**:
+- Identify which phases depend on others
+- Sequential: Phase 1 → wait → Phase 2
+- Parallel: Phases 2, 3, 4, 5 spawn together (single message, multiple Task calls)
+
+**Example Structure**:
+```
+Orchestrator
+├── Phase 1 (Sequential - blocks others)
+├── Phase 2 (Parallel) ─┬─ file-agent-1
+│                        └─ file-agent-2
+├── Phase 3 (Parallel) ─┬─ file-agent-3
+│                        └─ file-agent-4
+└── Phase 4 (Parallel)
+```
+
+**When to Use**:
+- Tasks involving 5+ file modifications across multiple conceptual areas
+- Tasks with clear phase boundaries and some dependencies
+- Tasks where parallelization significantly reduces execution time
+
+**Permission Handling**:
+- Each phase/file agent reports permission blocks immediately
+- Orchestrator aggregates and alerts user
+- Check `.claude/settings.local.json` for pre-approved permissions before alerting
+
+**Before Alerting User About Permissions**:
+1. Check `.claude/settings.local.json` for pre-approved permissions:
+```json
+{
+  "allowedToolPatterns": [
+    "Bash(git add:*)",
+    "Bash(git commit:*)",
+    "Edit",
+    "Write"
+  ]
+}
+```
+
+2. Only alert if permission is NOT in allowedToolPatterns
+
+3. If blocked by new permission:
+   - Report which agent/phase was blocked
+   - Report which specific file/operation needs permission
+   - Report required permission pattern to add
+
+**Pattern**: Check local settings → Use approved permissions → Alert only for new ones
 
 ## Quick Reference
 

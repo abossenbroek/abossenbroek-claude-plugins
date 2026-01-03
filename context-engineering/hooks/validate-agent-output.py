@@ -43,6 +43,27 @@ from context_engineering.models import (
     TokenEstimate,
 )
 
+
+def format_validation_error(error: dict[str, Any]) -> str:
+    """Format Pydantic validation error with actionable hints."""
+    location = ".".join(str(x) for x in error["loc"])
+    message = error["msg"]
+    error_type = error.get("type", "")
+
+    formatted = f"- {location}: {message}"
+
+    if "missing" in error_type:
+        formatted += f"\n  Hint: Add '{location}' field to output"
+    elif "enum" in error_type or "literal" in error_type:
+        formatted += "\n  Hint: Check valid values in model definition"
+    elif "type_error.float" in error_type or "greater_than" in error_type:
+        formatted += "\n  Hint: Value must be numeric in valid range"
+    elif "string_too_short" in error_type:
+        formatted += "\n  Hint: Field requires more content"
+
+    return formatted
+
+
 # Map agent names to their Pydantic models
 AGENT_TYPE_MAP = {
     "plugin-analyzer": PluginAnalysis,
@@ -229,13 +250,8 @@ def validate_agent_output(output: str) -> tuple[bool, str]:  # noqa: PLR0911
         model_class.model_validate(validation_data)
         return True, f"VALID ({agent_type})"
     except ValidationError as e:
-        # Format validation errors
-        errors = []
-        for error in e.errors():
-            location = ".".join(str(x) for x in error["loc"])
-            message = error["msg"]
-            errors.append(f"  - {location}: {message}")
-
+        # Format validation errors with actionable hints
+        errors = [format_validation_error(err) for err in e.errors()]
         error_msg = "\n".join(errors)
         return False, f"INVALID ({agent_type}):\n{error_msg}"
 
@@ -246,18 +262,21 @@ def main() -> None:
     output = sys.stdin.read()
 
     if not output.strip():
-        print("INVALID: Empty output", file=sys.stderr)
-        sys.exit(1)
+        print("decision: block")
+        print("reason: |")
+        print("  INVALID: Empty output")
+        return
 
     # Validate
     is_valid, message = validate_agent_output(output)
 
     if is_valid:
-        print(message)
-        sys.exit(0)
+        print("decision: continue")
     else:
-        print(message, file=sys.stderr)
-        sys.exit(1)
+        print("decision: block")
+        print("reason: |")
+        for line in message.split("\n"):
+            print(f"  {line}")
 
 
 if __name__ == "__main__":
