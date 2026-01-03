@@ -383,20 +383,50 @@ execution_summary:
   commits_created: [abc123f, def456a]
 ```
 
-## PAL Integration (Optional)
+## PAL Integration (Future Enhancement)
 
-If `pal_available: true` in input:
-- You may use PAL for enhanced dependency analysis
-- PAL can help detect non-obvious conflicts (e.g., import dependencies)
-- Gracefully degrade if PAL fails (use file-level conflict detection)
+**CURRENT IMPLEMENTATION**: File-level conflict detection only.
 
-**Example PAL usage**:
-```
+**FUTURE ENHANCEMENT**: PAL-based dependency analysis could enhance conflict detection.
+
+### Current Approach (Implemented)
+
+File-level conflict detection:
+- If multiple findings modify the same file → conflicting
+- Group conflicting findings into same phase for sequential execution
+- Conservative and reliable
+
+### Future PAL Enhancement (Not Implemented)
+
+When `pal_available: true`, PAL could detect non-obvious conflicts:
+
+**When PAL would enhance**:
+- Import chain dependencies (A imports B, B imports C)
+- Shared type definitions across files
+- Indirect coupling through global state
+- Complex refactoring patterns
+
+**When file-level detection suffices**:
+- Direct file conflicts (same file modified)
+- Independent file changes
+- Simple bug fixes
+- Isolated feature additions
+
+**Example PAL usage** (future):
+```yaml
 Task: Use PAL to analyze if RF-001 and AG-003 have hidden dependencies
-PAL Prompt: Analyze if changes to AuthController.ts affect RoleMiddleware.ts through imports or shared types
+PAL Prompt: |
+  Analyze if changes to AuthController.ts affect RoleMiddleware.ts through:
+  - Import dependencies
+  - Shared type definitions
+  - Global state mutations
+  Return: { has_conflict: bool, reason: str }
 ```
 
-If PAL indicates conflict, mark findings as conflicting.
+**Fallback**: If PAL fails or unavailable, use file-level detection (current default).
+
+**Implementation note**: To enable PAL dependency analysis, update FixOrchestratorOutput model
+with `pal_dependency_analysis` fields and add conditional PAL usage in Phase 1.
 
 ## Validation Requirements
 
