@@ -6,7 +6,6 @@ These models define the output schemas for:
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 # =============================================================================
 # File Change Models
 # =============================================================================

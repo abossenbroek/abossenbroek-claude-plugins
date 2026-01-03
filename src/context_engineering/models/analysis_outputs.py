@@ -10,7 +10,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .enums import ContextTier, PatternType, ViolationType
 
-
 # =============================================================================
 # Plugin Analysis Models (plugin-analyzer output)
 # =============================================================================

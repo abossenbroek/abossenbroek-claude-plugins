@@ -11,7 +11,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .enums import ContextTier, ImprovementType
 
-
 # =============================================================================
 # Context Improvement Models (context-optimizer output)
 # =============================================================================
@@ -59,9 +58,7 @@ class AgentStructure(BaseModel):
     """Current or proposed agent structure."""
 
     agents: list[str] = Field(default_factory=list)
-    hierarchy: dict[str, list[str]] = Field(
-        default_factory=dict
-    )  # parent -> children
+    hierarchy: dict[str, list[str]] = Field(default_factory=dict)  # parent -> children
     entry_points: list[str] = Field(default_factory=list)
 
 

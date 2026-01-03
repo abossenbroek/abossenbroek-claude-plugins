@@ -17,12 +17,9 @@ from context_engineering.models import (
     TokenEstimate,
 )
 from context_engineering.models.analysis_outputs import (
-    AgentAnalysis,
     DetectedPattern,
     FlowEdge,
-    ImprovementOpportunity,
     PatternViolation,
-    PluginMetrics,
 )
 from context_engineering.models.enums import ViolationType
 from context_engineering.models.improvement_outputs import (

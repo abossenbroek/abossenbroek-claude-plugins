@@ -1,32 +1,32 @@
 """Context engineering models for plugin analysis and improvement."""
 
 from .models import (
-    # Enums
-    ContextTier,
-    ImprovementType,
-    PatternType,
-    RiskLevel,
-    # Analysis outputs
-    ContextFlowMap,
-    FlowEdge,
-    PatternViolation,
-    PluginAnalysis,
-    PluginMetrics,
-    # Improvement outputs
-    ContextImprovement,
-    HandoffImprovement,
-    OrchestrationImprovement,
-    PlanAnalysis,
-    PlanPhase,
-    # Grounding outputs
-    ConsistencyCheck,
-    PatternCompliance,
-    RiskAssessment,
-    TokenEstimate,
     # Synthesis outputs
     BeforeAfterComparison,
+    # Grounding outputs
+    ConsistencyCheck,
+    # Analysis outputs
+    ContextFlowMap,
+    # Improvement outputs
+    ContextImprovement,
+    # Enums
+    ContextTier,
     FileChange,
+    FlowEdge,
+    HandoffImprovement,
     ImprovementReport,
+    ImprovementType,
+    OrchestrationImprovement,
+    PatternCompliance,
+    PatternType,
+    PatternViolation,
+    PlanAnalysis,
+    PlanPhase,
+    PluginAnalysis,
+    PluginMetrics,
+    RiskAssessment,
+    RiskLevel,
+    TokenEstimate,
     TokenMetrics,
 )
 

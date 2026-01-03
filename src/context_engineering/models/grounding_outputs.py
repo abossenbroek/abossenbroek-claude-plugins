@@ -11,7 +11,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .enums import PatternType, RiskLevel
 
-
 # =============================================================================
 # Pattern Compliance Models (pattern-checker output)
 # =============================================================================

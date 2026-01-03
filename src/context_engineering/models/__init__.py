@@ -1,6 +1,7 @@
 """Pydantic models for context engineering agent outputs.
 
-This module provides type-safe models for validating context engineering analysis outputs.
+This module provides type-safe models for validating context engineering
+analysis outputs.
 """
 
 from .analysis_outputs import (
@@ -29,6 +30,14 @@ from .improvement_outputs import (
     PlanAnalysis,
     PlanPhase,
 )
+from .state import (
+    AnalysisMode,
+    ContextEngineeringState,
+    FileRef,
+    FocusArea,
+    ImmutableState,
+    MutableState,
+)
 from .synthesis_outputs import (
     BeforeAfterComparison,
     FileChange,
@@ -36,7 +45,7 @@ from .synthesis_outputs import (
     TokenMetrics,
 )
 
-__all__ = [
+__all__ = [  # noqa: RUF022
     # Enums
     "ContextTier",
     "ImprovementType",
@@ -64,4 +73,11 @@ __all__ = [
     "FileChange",
     "ImprovementReport",
     "TokenMetrics",
+    # State
+    "AnalysisMode",
+    "ContextEngineeringState",
+    "FileRef",
+    "FocusArea",
+    "ImmutableState",
+    "MutableState",
 ]
