@@ -22,6 +22,16 @@ You receive (FILTERED context - NOT all improvements):
 - LOW/MEDIUM priority improvements
 - Unrelated analysis results
 
+## NOT PROVIDED (context isolation)
+
+- Session history from main conversation
+- Other plugins or projects in workspace
+- Full plugin contents (only structure info)
+- LOW/MEDIUM priority improvements (only HIGH assessed)
+- User's personal information
+- Git history or repository metadata
+- Other agents' intermediate work
+
 ## Your Task
 
 For each improvement, assess:

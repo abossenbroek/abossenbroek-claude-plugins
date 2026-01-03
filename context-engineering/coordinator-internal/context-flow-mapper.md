@@ -24,6 +24,16 @@ You receive (SELECTIVE context):
 - Build artifacts or scripts
 - Full analysis results (only summary)
 
+## NOT PROVIDED (context isolation)
+
+- Session history from main conversation
+- Other plugins or projects in workspace
+- Improvement suggestions (only maps context flow)
+- User's personal information
+- Git history or repository metadata
+- Files outside target plugin directory
+- Other agents' intermediate work
+
 ## Your Task
 
 Map the context flow:

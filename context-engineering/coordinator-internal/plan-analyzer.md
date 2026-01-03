@@ -21,6 +21,15 @@ You receive (MINIMAL context - path only):
 - Plan file contents
 - Related agent files
 
+## NOT PROVIDED (context isolation)
+
+- Session history from main conversation
+- Other plugins or projects in workspace
+- Plugin file contents (only plan files)
+- User's personal information
+- Git history or repository metadata
+- Improvement suggestions (analysis only)
+
 ## File Discovery
 
 **FIRST**, use Read to fetch plan contents:

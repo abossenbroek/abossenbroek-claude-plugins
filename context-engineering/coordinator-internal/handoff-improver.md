@@ -29,6 +29,16 @@ You receive (SELECTIVE context - FOCUS FILTERED):
 - Context optimization issues (handled by context-optimizer)
 - Orchestration issues (handled by orchestration-improver)
 
+## NOT PROVIDED (context isolation)
+
+- Session history from main conversation
+- Other plugins or projects in workspace
+- Context-specific files (focus-filtered)
+- User's personal information
+- Git history or repository metadata
+- Full agent file contents (only handoff-relevant sections)
+- Other agents' intermediate work
+
 ## Your Task
 
 Generate specific improvements:

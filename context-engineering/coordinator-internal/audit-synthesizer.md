@@ -23,6 +23,17 @@ You receive (METADATA context):
 - Intermediate agent outputs
 - Original source files
 
+## NOT PROVIDED (context isolation)
+
+- Session history from main conversation
+- Other plugins or projects in workspace
+- Full plugin or plan contents (only metadata)
+- Rejected or unverified findings
+- Improvement suggestions (audit only)
+- User's personal information
+- Git history or repository metadata
+- Other agents' intermediate work
+
 ## Your Task
 
 Generate the final audit report:

@@ -31,6 +31,16 @@ since LOW items have minimal impact and low conflict risk.
 - Unrelated improvements from other focus areas
 - Full analysis results
 
+## NOT PROVIDED (context isolation)
+
+- Session history from main conversation
+- Other plugins or projects in workspace
+- Full plugin contents (only improvement specs)
+- LOW priority improvements (severity-batched)
+- User's personal information
+- Git history or repository metadata
+- Other agents' intermediate work
+
 ## Your Task
 
 For each improvement, verify:

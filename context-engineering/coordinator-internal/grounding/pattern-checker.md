@@ -29,6 +29,16 @@ LOW-priority items (<10% impact) receive only basic Four Laws verification here 
 - Improvements from other focus areas
 - Full analysis results
 
+## NOT PROVIDED (context isolation)
+
+- Session history from main conversation
+- Other plugins or projects in workspace
+- Full plugin contents (only improvement specs)
+- Unrelated improvements from other focus areas
+- User's personal information
+- Git history or repository metadata
+- Other agents' intermediate work
+
 ## Your Task
 
 For each improvement, verify:

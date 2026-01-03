@@ -34,6 +34,16 @@ You receive (MINIMAL context - path only):
 - Agent file contents
 - Command/skill/hook file contents
 
+## NOT PROVIDED (context isolation)
+
+- Session history from main conversation
+- Other plugins or projects in workspace
+- User's personal information
+- Git history or repository metadata
+- Files outside target plugin directory
+- Raw file contents upfront (you lazy load via file_cache)
+- Improvement suggestions (analysis only)
+
 ## File Access
 
 **CRITICAL**: You do NOT perform file discovery. File discovery is complete before you run.

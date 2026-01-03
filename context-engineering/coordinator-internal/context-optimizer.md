@@ -27,6 +27,16 @@ You receive (SELECTIVE context - FOCUS FILTERED):
 - scripts/*.py files (except validation scripts)
 - Orchestration or handoff analysis
 
+## NOT PROVIDED (context isolation)
+
+- Session history from main conversation
+- Other plugins or projects in workspace
+- Orchestration or handoff-specific files (focus-filtered)
+- User's personal information
+- Git history or repository metadata
+- Full plugin contents (only context-relevant files)
+- Other agents' intermediate work
+
 ## Your Task
 
 Generate specific improvements:

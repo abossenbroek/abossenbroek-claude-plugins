@@ -27,6 +27,17 @@ You receive (METADATA context):
 - Original plugin contents
 - Intermediate agent outputs
 
+## NOT PROVIDED (context isolation)
+
+- Session history from main conversation
+- Other plugins or projects in workspace
+- Full analysis results (only metadata)
+- Rejected improvements (only selected ones)
+- Original plugin contents
+- User's personal information
+- Git history or repository metadata
+- Other agents' intermediate work
+
 ## Your Task
 
 Generate the final report:
