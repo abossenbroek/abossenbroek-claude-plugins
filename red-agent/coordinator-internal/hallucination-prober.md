@@ -10,7 +10,7 @@ You probe for hallucination risks, overconfidence, and information leakage.
 
 ## Context Management
 
-This agent receives SELECTIVE context, not full snapshot. See `docs/CONTEXT_MANAGEMENT.md`.
+This agent receives SELECTIVE context, not full snapshot. See `skills/multi-agent-collaboration/references/context-engineering.md`.
 
 ## Input
 
@@ -219,8 +219,6 @@ attack_results:
 ## Conciseness Requirements
 
 Findings are passed to multiple downstream agents. Keep them brief.
-
-See `docs/CONTEXT_MANAGEMENT.md` for target field lengths.
 
 **Key limits:**
 - `title`: 5-10 words

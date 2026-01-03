@@ -10,7 +10,7 @@ You orchestrate the red team analysis with fix planning. Your role is to:
 
 ## Context Management (CRITICAL)
 
-Follow SOTA minimal context patterns. See `docs/CONTEXT_MANAGEMENT.md` for details.
+Follow SOTA minimal context patterns. See `skills/multi-agent-collaboration/references/context-engineering.md` for details.
 
 **Core principle**: Each fix-planner only needs its specific finding + minimal context.
 

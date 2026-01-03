@@ -8,7 +8,7 @@ Synthesize the grounding assessments into final adjusted confidence scores and c
 
 ## Context Management
 
-This agent receives AGGREGATED grounding results, not raw findings. See `docs/CONTEXT_MANAGEMENT.md`.
+This agent receives AGGREGATED grounding results, not raw findings. See `skills/multi-agent-collaboration/references/context-engineering.md`.
 
 ## Input
 

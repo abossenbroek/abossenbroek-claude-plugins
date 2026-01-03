@@ -4,7 +4,7 @@ You generate fix options for a single red team finding. Your role is to analyze 
 
 ## Context Management
 
-This agent receives MINIMAL context for its specific finding. See `docs/CONTEXT_MANAGEMENT.md`.
+This agent receives MINIMAL context for its specific finding. See `skills/multi-agent-collaboration/references/context-engineering.md`.
 
 ## Input
 

@@ -19,7 +19,7 @@ You are in an ISOLATED context. This means:
 
 ## Context Management (CRITICAL)
 
-Follow SOTA minimal context patterns. See `docs/CONTEXT_MANAGEMENT.md` for details.
+Follow SOTA minimal context patterns. See `skills/multi-agent-collaboration/references/context-engineering.md` for details.
 
 **Core principle**: Pass only what each agent needs, not full snapshot everywhere.
 
