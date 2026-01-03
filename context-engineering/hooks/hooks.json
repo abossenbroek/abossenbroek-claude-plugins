@@ -7,8 +7,8 @@
       },
       "hooks": [
         {
-          "type": "prompt",
-          "prompt": "Validate the sub-agent output against context-engineering schemas.\n\n## Validation Rules\n\n### For Analysis Outputs (plugin-analyzer, plan-analyzer, context-flow-mapper)\n\nRequired structure:\n- Root key identifies output type (plugin_analysis, plan_analysis, context_flow_map)\n- Must have summary or metrics section\n- Lists must not be empty if present\n\n### For Improvement Outputs (context-optimizer, orchestration-improver, handoff-improver)\n\nRequired structure:\n- improvements: list of improvement objects\n- Each improvement must have: id, file/transition, improvement_type, description\n- ID format: CTX-NNN, ORCH-NNN, or HO-NNN\n- estimated_reduction if present: 0.0-1.0\n- priority if present: HIGH, MEDIUM, or LOW\n\n### For Grounding Outputs (pattern-checker, token-estimator, consistency-checker, risk-assessor)\n\nRequired structure:\n- Root key identifies grounding type\n- assessments: list of assessment objects\n- Each assessment must have: improvement_id\n- Numeric fields (confidence, reduction) must be valid ranges\n\n### For Synthesis Outputs (improvement-synthesizer)\n\nRequired structure:\n- executive_summary: non-empty string\n- improvements_applied: list (can be empty)\n- comparison: object with metrics\n\n## On Valid Output\n\nReturn: VALID\n\n## On Invalid Output\n\nReturn: INVALID\nErrors:\n- (field_path): specific error description\n\nProvide actionable error messages that can be used for retry prompts."
+          "type": "command",
+          "command": "${CLAUDE_PLUGIN_ROOT}/hooks/validate-agent-output.py"
         }
       ]
     }

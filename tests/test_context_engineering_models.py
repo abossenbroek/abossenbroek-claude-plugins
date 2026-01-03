@@ -22,12 +22,23 @@ from context_engineering.models.analysis_outputs import (
     PatternViolation,
 )
 from context_engineering.models.enums import ViolationType
+from context_engineering.models.grounding_outputs import (
+    BreakingChange,
+    PatternViolationDetail,
+)
 from context_engineering.models.improvement_outputs import (
     AgentStructure,
     CodeChange,
     HandoffPayload,
     HandoffTransition,
     MigrationStep,
+)
+from context_engineering.models.synthesis_outputs import (
+    AppliedImprovement,
+    BeforeAfterComparison,
+    FileChange,
+    ImprovementReport,
+    NextStep,
 )
 
 
@@ -179,7 +190,10 @@ class TestImprovementOutputs:
             description="Add NOT PASSED section",
             code_change=CodeChange(
                 before="## Input\nYou receive:\n- data",
-                after="## Input\nYou receive (SELECTIVE):\n- summary\n\n**NOT PROVIDED**:\n- full data",
+                after=(
+                    "## Input\nYou receive (SELECTIVE):\n- summary\n\n"
+                    "**NOT PROVIDED**:\n- full data"
+                ),
             ),
         )
         assert improvement.code_change is not None
@@ -271,8 +285,6 @@ class TestGroundingOutputs:
 
     def test_pattern_compliance_with_violations(self):
         """Test PatternCompliance with violations."""
-        from context_engineering.models.grounding_outputs import PatternViolationDetail
-
         compliance = PatternCompliance(
             improvement_id="CTX-001",
             pattern_compliant=False,
@@ -322,8 +334,6 @@ class TestGroundingOutputs:
 
     def test_risk_assessment_valid(self):
         """Test valid RiskAssessment."""
-        from context_engineering.models.grounding_outputs import BreakingChange
-
         assessment = RiskAssessment(
             improvement_id="ORCH-001",
             risk_level=RiskLevel.HIGH,
@@ -346,14 +356,6 @@ class TestSynthesisOutputs:
 
     def test_improvement_report_valid(self):
         """Test valid ImprovementReport."""
-        from context_engineering.models.synthesis_outputs import (
-            AppliedImprovement,
-            BeforeAfterComparison,
-            FileChange,
-            ImprovementReport,
-            NextStep,
-        )
-
         report = ImprovementReport(
             executive_summary="Applied 2 improvements achieving 45% token reduction.",
             improvements_applied=[
@@ -388,8 +390,6 @@ class TestSynthesisOutputs:
 
     def test_improvement_report_minimal(self):
         """Test minimal ImprovementReport."""
-        from context_engineering.models.synthesis_outputs import ImprovementReport
-
         report = ImprovementReport(executive_summary="No improvements needed.")
         assert report.improvements_applied == []
         assert report.total_improvements == 0

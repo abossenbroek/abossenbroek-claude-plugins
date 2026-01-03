@@ -116,7 +116,10 @@ class TestFileChangeModel:
             description="Added context tier specification and NOT PASSED section",
             diff=FileDiff(
                 before="## Input\nYou receive:\n- data",
-                after="## Input\nYou receive (SELECTIVE):\n- summary\n\n**NOT PROVIDED**:\n- full data",
+                after=(
+                    "## Input\nYou receive (SELECTIVE):\n- summary\n\n"
+                    "**NOT PROVIDED**:\n- full data"
+                ),
             ),
         )
         assert change.change_type == "modify"
@@ -200,7 +203,11 @@ class TestImprovementReportModel:
     def test_improvement_report_full(self):
         """Test full ImprovementReport."""
         report = ImprovementReport(
-            executive_summary="Applied 3 improvements to red-agent achieving 45% token reduction. Added context tiers to 2 agents and implemented severity batching for grounding.",
+            executive_summary=(
+                "Applied 3 improvements to red-agent achieving 45% token "
+                "reduction. Added context tiers to 2 agents and implemented "
+                "severity batching for grounding."
+            ),
             improvements_applied=[
                 AppliedImprovement(
                     improvement_id="CTX-001",
@@ -277,7 +284,9 @@ class TestImprovementReportModel:
     def test_improvement_report_no_improvements(self):
         """Test ImprovementReport with no improvements."""
         report = ImprovementReport(
-            executive_summary="Plugin already follows all SOTA patterns. No improvements needed.",
+            executive_summary=(
+                "Plugin already follows all SOTA patterns. " "No improvements needed."
+            ),
             plugin_name="well-designed-plugin",
             analysis_mode="deep",
         )

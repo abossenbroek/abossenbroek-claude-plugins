@@ -4,7 +4,6 @@ import pytest
 from pydantic import ValidationError
 
 from context_engineering.models import (
-    ContextFlowMap,
     ContextTier,
     PlanAnalysis,
     PluginAnalysis,
@@ -98,7 +97,10 @@ class TestPluginAnalysisModel:
                 estimated_total_tokens=50000,
                 tier_compliance=0.7,
             ),
-            summary="Well-structured plugin using firewall pattern. 3 agents missing tier specs.",
+            summary=(
+                "Well-structured plugin using firewall pattern. "
+                "3 agents missing tier specs."
+            ),
         )
 
         assert analysis.plugin_name == "red-agent"
