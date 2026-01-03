@@ -18,6 +18,8 @@ from .enums import (
     RiskLevel,
 )
 from .grounding_outputs import (
+    ChallengeAssessment,
+    ChallengeValidity,
     ConsistencyCheck,
     PatternCompliance,
     RiskAssessment,
@@ -64,6 +66,8 @@ __all__ = [  # noqa: RUF022
     "PlanAnalysis",
     "PlanPhase",
     # Grounding
+    "ChallengeAssessment",
+    "ChallengeValidity",
     "ConsistencyCheck",
     "PatternCompliance",
     "RiskAssessment",

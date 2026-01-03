@@ -69,10 +69,25 @@ Receives via prompt:
    Launch 1 grounding agent:
    - `pattern-checker.md` only
 
-3. **Collect Grounding Results**
-   Aggregate assessments from all grounding agents.
+3. **Challenge HIGH Priority Improvements**
 
-4. **Store Grounding Results in State**
+   **For HIGH priority improvements ONLY**:
+   Launch the challenger agent to validate claims have supporting evidence:
+   ```
+   Task: Validate improvement claims
+   Agent: coordinator-internal/grounding/challenger.md
+   Prompt:
+     improvements: [HIGH improvements with claims]
+     relevant_files: [file references if needed]
+   ```
+
+   This agent runs ONLY for HIGH priority items, not MEDIUM or LOW.
+   Maximum 1 round per improvement - no retry loops.
+
+4. **Collect Grounding Results**
+   Aggregate assessments from all grounding agents, including challenge assessments for HIGH priority improvements.
+
+5. **Store Grounding Results in State**
    ```bash
    python scripts/state_manager.py update "$plugin_path" grounding_results "$GROUNDING_JSON"
    ```

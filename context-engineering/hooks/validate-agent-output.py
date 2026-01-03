@@ -29,6 +29,7 @@ sys.path.insert(0, str(SCRIPT_DIR / "src"))
 
 # ruff: noqa: E402 (imports after sys.path modification)
 from context_engineering.models import (
+    ChallengeAssessment,
     ConsistencyCheck,
     ContextFlowMap,
     ContextImprovement,
@@ -54,6 +55,7 @@ AGENT_TYPE_MAP = {
     "token-estimator": TokenEstimate,
     "consistency-checker": ConsistencyCheck,
     "risk-assessor": RiskAssessment,
+    "challenger": ChallengeAssessment,  # Validates list of assessments
     "improvement-synthesizer": ImprovementReport,
     "audit-synthesizer": ImprovementReport,  # Same model as improvement-synthesizer
 }
@@ -65,6 +67,7 @@ ROOT_KEY_MAP = {
     "context_flow_map": "context-flow-mapper",
     "improvements": "context-optimizer",  # Can be optimizer, orch, or handoff
     "improvement_report": "improvement-synthesizer",
+    "challenge_assessments": "challenger",
 }
 
 
@@ -169,6 +172,13 @@ def _extract_validation_data(  # noqa: PLR0911
         assessments = data.get("assessments", [])
         if not assessments:
             return None, "No assessments found in output"
+        return assessments[0], None
+
+    # Challenger agent (returns list of assessments)
+    if agent_type == "challenger":
+        assessments = data.get("challenge_assessments", [])
+        if not assessments:
+            return None, "No challenge_assessments found in output"
         return assessments[0], None
 
     # Default

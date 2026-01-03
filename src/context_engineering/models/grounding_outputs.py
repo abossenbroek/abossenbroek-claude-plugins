@@ -5,7 +5,10 @@ These models define the output schemas for:
 - token-estimator: Estimates token reduction
 - consistency-checker: Checks internal consistency
 - risk-assessor: Assesses breaking change risk
+- challenger: Validates improvement claims have supporting evidence
 """
+
+from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -153,6 +156,40 @@ class RiskAssessment(BaseModel):
     # Confidence and notes
     confidence: float = Field(default=0.8, ge=0.0, le=1.0)
     notes: str | None = None
+
+
+# =============================================================================
+# Challenger Models (challenger output)
+# =============================================================================
+
+
+class ChallengeValidity(str, Enum):
+    """Validity of a claim after challenger review."""
+
+    SUPPORTED = "SUPPORTED"
+    UNSUPPORTED = "UNSUPPORTED"
+    UNCERTAIN = "UNCERTAIN"
+
+
+class ChallengeAssessment(BaseModel):
+    """Assessment of an improvement claim by the challenger.
+
+    Output from challenger grounding agent.
+    """
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    improvement_id: str = Field(description="ID of improvement being challenged")
+    claim: str = Field(description="Core claim being validated")
+    validity: ChallengeValidity = Field(description="Assessment of claim validity")
+    evidence_strength: float = Field(
+        ge=0.0, le=1.0, description="Strength of evidence (0.0-1.0)"
+    )
+    gaps: list[str] = Field(description="Gaps in the evidence")
+    alternatives: list[str] = Field(description="Alternative explanations")
+    required_evidence: list[str] = Field(
+        description="Evidence needed to strengthen claim"
+    )
 
 
 # =============================================================================

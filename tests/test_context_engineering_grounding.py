@@ -4,6 +4,8 @@ import pytest
 from pydantic import ValidationError
 
 from context_engineering.models import (
+    ChallengeAssessment,
+    ChallengeValidity,
     ConsistencyCheck,
     PatternCompliance,
     PatternType,
@@ -360,3 +362,139 @@ class TestGroundedImprovementModel:
         )
         assert not grounded.is_approved
         assert grounded.approval_notes is not None
+
+
+class TestChallengeAssessmentModel:
+    """Tests for ChallengeAssessment model."""
+
+    def test_challenge_validity_enum(self):
+        """Test ChallengeValidity enum has expected values."""
+        assert ChallengeValidity.SUPPORTED == "SUPPORTED"
+        assert ChallengeValidity.UNSUPPORTED == "UNSUPPORTED"
+        assert ChallengeValidity.UNCERTAIN == "UNCERTAIN"
+        # Verify only 3 values
+        assert len(ChallengeValidity) == 3
+
+    def test_challenge_assessment_supported(self):
+        """Test challenge assessment with supported claim."""
+        assessment = ChallengeAssessment(
+            improvement_id="CTX-001",
+            claim="Will reduce tokens by 30%",
+            validity=ChallengeValidity.SUPPORTED,
+            evidence_strength=0.85,
+            gaps=[],
+            alternatives=[],
+            required_evidence=[],
+        )
+        assert assessment.validity == ChallengeValidity.SUPPORTED
+        assert assessment.evidence_strength == 0.85
+        assert assessment.gaps == []
+
+    def test_challenge_assessment_unsupported(self):
+        """Test challenge assessment with unsupported claim."""
+        assessment = ChallengeAssessment(
+            improvement_id="CTX-002",
+            claim="Will eliminate all context pollution",
+            validity=ChallengeValidity.UNSUPPORTED,
+            evidence_strength=0.2,
+            gaps=[
+                "No baseline measurement provided",
+                "No after measurement methodology",
+            ],
+            alternatives=[
+                "May reduce some pollution but not all",
+                "Improvement may be marginal",
+            ],
+            required_evidence=[
+                "Token counts before/after",
+                "Context flow analysis",
+            ],
+        )
+        assert assessment.validity == ChallengeValidity.UNSUPPORTED
+        assert assessment.evidence_strength == 0.2
+        assert len(assessment.gaps) == 2
+        assert len(assessment.alternatives) == 2
+        assert len(assessment.required_evidence) == 2
+
+    def test_challenge_assessment_uncertain(self):
+        """Test challenge assessment with uncertain claim."""
+        assessment = ChallengeAssessment(
+            improvement_id="ORCH-001",
+            claim="Will improve agent hierarchy",
+            validity=ChallengeValidity.UNCERTAIN,
+            evidence_strength=0.5,
+            gaps=["Unclear success criteria", "No comparison provided"],
+            alternatives=["May improve or may not change behavior"],
+            required_evidence=["Hierarchy diagrams before/after"],
+        )
+        assert assessment.validity == ChallengeValidity.UNCERTAIN
+        assert assessment.evidence_strength == 0.5
+
+    def test_evidence_strength_range(self):
+        """Test evidence_strength must be 0.0-1.0."""
+        # Test minimum valid value (0.0)
+        assessment = ChallengeAssessment(
+            improvement_id="CTX-001",
+            claim="Test claim",
+            validity=ChallengeValidity.UNCERTAIN,
+            evidence_strength=0.0,
+            gaps=[],
+            alternatives=[],
+            required_evidence=[],
+        )
+        assert assessment.evidence_strength == 0.0
+
+        # Test maximum valid value (1.0)
+        assessment = ChallengeAssessment(
+            improvement_id="CTX-002",
+            claim="Test claim",
+            validity=ChallengeValidity.SUPPORTED,
+            evidence_strength=1.0,
+            gaps=[],
+            alternatives=[],
+            required_evidence=[],
+        )
+        assert assessment.evidence_strength == 1.0
+
+        # Test invalid value below minimum
+        with pytest.raises(ValidationError):
+            ChallengeAssessment(
+                improvement_id="CTX-003",
+                claim="Test claim",
+                validity=ChallengeValidity.UNCERTAIN,
+                evidence_strength=-0.1,
+                gaps=[],
+                alternatives=[],
+                required_evidence=[],
+            )
+
+        # Test invalid value above maximum
+        with pytest.raises(ValidationError):
+            ChallengeAssessment(
+                improvement_id="CTX-004",
+                claim="Test claim",
+                validity=ChallengeValidity.SUPPORTED,
+                evidence_strength=1.5,
+                gaps=[],
+                alternatives=[],
+                required_evidence=[],
+            )
+
+    def test_challenge_assessment_all_fields(self):
+        """Test challenge assessment with all fields populated."""
+        assessment = ChallengeAssessment(
+            improvement_id="HO-001",
+            claim="Will standardize handoff schemas across all agents",
+            validity=ChallengeValidity.SUPPORTED,
+            evidence_strength=0.9,
+            gaps=["Testing methodology not specified"],
+            alternatives=[],
+            required_evidence=["Integration test results"],
+        )
+        assert assessment.improvement_id == "HO-001"
+        assert "standardize handoff schemas" in assessment.claim
+        assert assessment.validity == ChallengeValidity.SUPPORTED
+        assert assessment.evidence_strength == 0.9
+        assert len(assessment.gaps) == 1
+        assert assessment.alternatives == []
+        assert len(assessment.required_evidence) == 1

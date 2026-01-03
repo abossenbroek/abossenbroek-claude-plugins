@@ -29,6 +29,7 @@
     "./coordinator-internal/phases/improve-phase-executor.md",
     "./coordinator-internal/phases/categorize-phase-executor.md",
     "./coordinator-internal/phases/ground-phase-executor.md",
-    "./coordinator-internal/phases/synthesize-phase-executor.md"
+    "./coordinator-internal/phases/synthesize-phase-executor.md",
+    "./coordinator-internal/grounding/challenger.md"
   ]
 }
