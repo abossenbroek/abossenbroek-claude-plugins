@@ -1,0 +1,82 @@
+# Handoff Schema Template
+#
+# Copy and customize this template for each agent transition.
+
+handoff:
+  # Identifies the transition
+  from_agent: "[source agent path]"
+  to_agent: "[target agent path]"
+  context_level: FULL | SELECTIVE | FILTERED | MINIMAL | METADATA
+
+  # What IS passed to the target agent
+  payload:
+    # Required fields
+    field_1: "[description of data]"
+    field_2: "[description of data]"
+
+    # Optional fields (with defaults)
+    optional_field: "[description]"  # default: [value]
+
+    # Nested structures
+    nested:
+      sub_field_1: "[description]"
+      sub_field_2: "[description]"
+
+    # Lists
+    items:
+      - "[item description]"
+
+  # What is NOT passed (explicit exclusions - CRITICAL for context isolation)
+  not_passed:
+    - "[explicit exclusion 1]"
+    - "[explicit exclusion 2]"
+    - "[explicit exclusion 3]"
+    # Document WHY these are excluded:
+    # - [exclusion 1]: [reason]
+    # - [exclusion 2]: [reason]
+
+  # Expected response format
+  expected_output:
+    format: yaml | json | markdown
+    schema: "[Pydantic model name]"
+
+  # Optional: Validation rules
+  validation:
+    required_fields:
+      - field_1
+      - field_2
+    field_constraints:
+      field_1:
+        type: string
+        pattern: "^[A-Z]+-\\d{3}$"
+      field_2:
+        type: float
+        min: 0.0
+        max: 1.0
+
+# Example filled template:
+#
+# handoff:
+#   from_agent: "agents/improve-coordinator.md"
+#   to_agent: "coordinator-internal/plugin-analyzer.md"
+#   context_level: FULL
+#
+#   payload:
+#     plugin_path: "/path/to/plugin"
+#     plugin_manifest:
+#       name: "plugin-name"
+#       version: "1.0.0"
+#     agent_files:
+#       - file: "agents/coordinator.md"
+#         content: "[full content]"
+#     mode: "all"
+#
+#   not_passed:
+#     - git_history
+#     - node_modules
+#     - build_artifacts
+#     - unrelated_config_files
+#
+#   expected_output:
+#     format: yaml
+#     schema: PluginAnalysis

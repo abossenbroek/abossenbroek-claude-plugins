@@ -1,0 +1,53 @@
+{
+  "_comment": "Hook Configuration Template - Copy and customize for your plugin",
+
+  "hooks": [
+    {
+      "_comment": "PostToolUse hook for validating sub-agent outputs",
+      "event": "PostToolUse",
+      "matcher": {
+        "tool_name": "Task"
+      },
+      "hooks": [
+        {
+          "type": "prompt",
+          "prompt": "Validate the sub-agent output against expected schema.\n\n## Validation Rules\n\n1. Output must be valid YAML\n2. Required fields must be present\n3. Field values must match expected types\n4. IDs must match pattern XXX-NNN\n5. Confidence values must be 0.0-1.0\n\n## On Valid Output\n\nReturn: VALID\n\n## On Invalid Output\n\nReturn: INVALID\nErrors:\n- (field_path): error description\n\nProvide specific field-level errors for retry."
+        }
+      ]
+    },
+
+    {
+      "_comment": "PostToolUse hook for specific agent pattern",
+      "event": "PostToolUse",
+      "matcher": {
+        "tool_name": "Task",
+        "agent_pattern": "coordinator-internal/grounding/*"
+      },
+      "hooks": [
+        {
+          "type": "prompt",
+          "prompt": "Validate grounding agent output.\n\n## Expected Schema\n\ngrounding_results:\n  agent: [agent name]\n  assessments:\n    - improvement_id: [ID]\n      [validation fields]\n\n## Required Fields\n\n- agent: Non-empty string\n- assessments: Non-empty list\n- Each assessment must have improvement_id\n\n## On Valid: Return VALID\n## On Invalid: Return INVALID with specific errors"
+        }
+      ]
+    }
+  ],
+
+  "_template_notes": {
+    "events": [
+      "PreToolUse - Before tool execution",
+      "PostToolUse - After tool execution",
+      "Stop - When agent stops",
+      "SubagentStop - When sub-agent stops",
+      "SessionStart - At session start",
+      "SessionEnd - At session end"
+    ],
+    "matcher_options": {
+      "tool_name": "Exact tool name match",
+      "agent_pattern": "Glob pattern for agent paths"
+    },
+    "hook_types": {
+      "prompt": "Claude evaluates prompt and can block/allow",
+      "command": "Runs shell command"
+    }
+  }
+}
