@@ -132,7 +132,9 @@ class MockPAL:
         pass
 
 
-def create_pal_check_output(available: bool = True, models: list[str] | None = None) -> dict[str, Any]:
+def create_pal_check_output(
+    available: bool = True, models: list[str] | None = None
+) -> dict[str, Any]:
     """Create mock output for pal-availability-checker agent.
 
     Args:
