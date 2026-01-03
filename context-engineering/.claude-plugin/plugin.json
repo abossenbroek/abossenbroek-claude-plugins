@@ -22,6 +22,11 @@
   "agents": [
     "./agents/improve-coordinator.md",
     "./agents/plan-coordinator.md",
-    "./agents/audit-coordinator.md"
+    "./agents/audit-coordinator.md",
+    "./coordinator-internal/phases/analyze-phase-executor.md",
+    "./coordinator-internal/phases/improve-phase-executor.md",
+    "./coordinator-internal/phases/categorize-phase-executor.md",
+    "./coordinator-internal/phases/ground-phase-executor.md",
+    "./coordinator-internal/phases/synthesize-phase-executor.md"
   ]
 }
