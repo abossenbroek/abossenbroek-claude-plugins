@@ -181,7 +181,43 @@ agent:
 
 ## GitHub Actions Workflows
 
+### Important: Two Approaches
+
+There are **two ways** to use red-agent in GitHub Actions:
+
+1. **Claude Code Action** (Recommended) - Uses `anthropics/claude-code-action@v1`
+   - Claude receives a prompt and autonomously runs commands
+   - More flexible, can handle complex multi-step workflows
+   - Requires ANTHROPIC_API_KEY in secrets
+   - Claude posts results as PR comments
+
+2. **Direct CLI** - Install Claude Code CLI and run commands directly
+   - More predictable, explicit command execution
+   - Easier to parse output and integrate with other steps
+   - Can save outputs to files for processing
+   - More control over error handling
+
+**Key difference**: The Action gives Claude a goal (e.g., "analyze this PR"), while CLI runs specific commands (e.g., `/redteam-pr:branch`).
+
+### Prerequisites
+
+Before setting up workflows, you need to:
+
+1. **Install Claude Code GitHub App** at https://github.com/apps/claude
+   - Grant permissions: Contents (Read & Write), PRs (Read & Write), Issues (Read & Write)
+
+2. **Add API Key to Repository Secrets**
+   - Go to Settings → Secrets and variables → Actions
+   - Add `ANTHROPIC_API_KEY` with your Claude API key
+   - **Alternative**: Use AWS Bedrock or Google Vertex AI credentials
+
+3. **Ensure red-agent plugin is available**
+   - **Option A**: Check plugin into your repository at `.claude/plugins/red-agent/`
+   - **Option B**: Install during workflow with `git submodule` or `git clone`
+
 ### Basic PR Analysis Workflow
+
+**Using Claude Code Action (Recommended)**
 
 ```yaml
 # .github/workflows/red-agent-analysis.yml
@@ -197,57 +233,118 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
-      contents: read
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history for diff analysis
+          fetch-depth: 0  # Full history for branch comparison
 
-      - name: Setup Claude Code
-        uses: anthropic/setup-claude-code@v1
-        with:
-          version: latest
-
-      - name: Install jscpd (duplicate detection)
+      - name: Install red-agent plugin
         run: |
-          cd .claude/plugins/red-agent
-          npm ci
+          # Option A: If plugin checked into repo
+          cd red-agent && npm ci && cd ..
+
+          # Option B: Clone plugin from separate repo
+          # git clone https://github.com/your-org/red-agent-plugin .claude/plugins/red-agent
+          # cd .claude/plugins/red-agent && npm ci && cd -
 
       - name: Run red-agent analysis
-        id: analysis
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            Please run a red-team security analysis on this PR using the red-agent plugin:
+
+            1. Run: /redteam-pr:branch main standard
+            2. Review all findings with CRITICAL or HIGH severity
+            3. Post a summary comment on the PR with your findings
+            4. If CRITICAL findings exist, explain why they must be fixed before merge
+
+            Focus especially on:
+            - Security vulnerabilities
+            - Code duplication issues
+            - Breaking changes
+            - Input validation gaps
+
+            Use the red-agent documentation for guidance on interpreting findings.
+          claude_args: "--max-turns 10"
+
+      - name: Check for blocking findings
         run: |
-          claude code -m "/redteam-pr:diff standard" > analysis-report.md
+          # Claude's analysis will be in the PR comments
+          # Optionally parse output and fail workflow
+          echo "Review Claude's PR comment for findings"
+```
 
-          # Extract summary for PR comment
-          echo "findings_count=$(grep -c '^###' analysis-report.md)" >> $GITHUB_OUTPUT
+**Alternative: Direct CLI Approach**
 
-      - name: Post analysis as PR comment
-        if: steps.analysis.outputs.findings_count > 0
+```yaml
+# .github/workflows/red-agent-cli.yml
+name: Red Agent PR Analysis (CLI)
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Install red-agent dependencies
+        run: |
+          cd red-agent  # or wherever plugin is located
+          npm ci
+          cd ..
+
+      - name: Run analysis
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          # Use Claude Code CLI directly with plugin available
+          claude code --print --anthropic-api-key "$ANTHROPIC_API_KEY" \
+            "/redteam-pr:branch main standard" > analysis.md
+
+      - name: Post results
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const report = fs.readFileSync('analysis-report.md', 'utf8');
+            const analysis = fs.readFileSync('analysis.md', 'utf8');
 
-            github.rest.issues.createComment({
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: `## 🔍 Red Agent Analysis\n\n${report}`
+              body: `## 🔍 Red Agent Analysis\n\n${analysis}`
             });
 
-      - name: Fail on critical findings
-        if: steps.analysis.outputs.findings_count > 0
-        run: |
-          # Check for CRITICAL severity
-          if grep -q "Severity: CRITICAL" analysis-report.md; then
-            echo "❌ CRITICAL findings detected - PR cannot be merged"
-            exit 1
-          fi
+            // Check for CRITICAL findings
+            if (analysis.includes('Severity: CRITICAL') || analysis.includes('CRITICAL Issues')) {
+              core.setFailed('❌ CRITICAL security findings must be addressed');
+            }
 ```
 
 ### Automated Fix Workflow
+
+**Using Claude Code Action**
 
 ```yaml
 # .github/workflows/red-agent-autofix.yml
@@ -271,35 +368,138 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
-      - name: Setup Claude Code
-        uses: anthropic/setup-claude-code@v1
-
-      - name: Run analysis and generate fixes
+      - name: Install red-agent plugin
         run: |
-          # Analyze
-          claude code -m "/redteam-pr:diff standard"
+          cd red-agent && npm ci && cd ..
 
-          # Generate fixes
-          claude code -m "/redteam-fix-orchestrator --mode github"
+      - name: Run analysis and apply fixes
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            Please analyze this PR and apply automated fixes using red-agent:
 
-      - name: Commit fixes
+            1. Run: /redteam-pr:branch main standard
+            2. Review all HIGH and CRITICAL findings
+            3. For each finding with LOW or MEDIUM complexity fix:
+               - Run: /redteam-fix-orchestrator --mode github
+               - Apply the fix
+               - Create a commit
+            4. Push all fix commits to this PR branch
+            5. Post a comment summarizing what was fixed
+
+            Safety rules:
+            - NEVER fix HIGH complexity issues without human review
+            - Create separate commits per finding
+            - Include finding ID in commit message
+            - Run tests after each fix if available
+
+            After fixing, comment on the PR with:
+            - Number of findings fixed
+            - Number requiring human review
+            - Instructions for reviewing the fixes
+          claude_args: "--max-turns 20"
+
+      - name: Notify on completion
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              name: 'auto-fix'
+            });
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['auto-fix-applied']
+            });
+```
+
+**Alternative: Direct CLI with Fix Orchestrator**
+
+```yaml
+# .github/workflows/red-agent-autofix-cli.yml
+name: Red Agent Automated Fixes (CLI)
+
+on:
+  pull_request:
+    types: [labeled]
+
+jobs:
+  autofix:
+    if: github.event.label.name == 'auto-fix'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Install red-agent dependencies
+        run: |
+          cd red-agent && npm ci && cd ..
+
+      - name: Configure git
         run: |
           git config user.name "Red Agent Bot"
           git config user.email "red-agent@users.noreply.github.com"
 
-          # Commits created by fix orchestrator
-          git push
+      - name: Run analysis
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          claude code --print "/redteam-pr:branch main standard" > findings.json
 
-      - name: Update PR
+      - name: Apply automated fixes
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          # Fix orchestrator will create commits
+          claude code --print "/redteam-fix-orchestrator --mode github"
+
+      - name: Push fixes
+        run: |
+          if git log origin/${{ github.head_ref }}..HEAD --oneline | grep -q "fix:"; then
+            git push
+            echo "fix_applied=true" >> $GITHUB_ENV
+          else
+            echo "fix_applied=false" >> $GITHUB_ENV
+          fi
+
+      - name: Comment on PR
+        if: env.fix_applied == 'true'
         uses: actions/github-script@v7
         with:
           script: |
-            github.rest.issues.createComment({
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: '✅ Automated fixes applied. Please review the changes.'
+              body: `✅ **Automated fixes applied**
+
+              Red Agent has analyzed the PR and applied fixes for LOW and MEDIUM complexity issues.
+
+              **Next steps:**
+              1. Review the fix commits
+              2. Run tests locally
+              3. Check if any HIGH complexity findings still need manual attention
+
+              See individual commits for details on each fix.`
             });
 ```
 
