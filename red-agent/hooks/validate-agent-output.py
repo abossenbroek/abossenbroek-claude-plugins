@@ -31,8 +31,16 @@ from red_agent.models import (
     AttackerOutput,
     AttackStrategyOutput,
     ContextAnalysisOutput,
+    FixApplicatorOutput,
+    FixCommitterOutput,
     FixCoordinatorAskUserOutput,
+    FixOrchestratorOutput,
+    FixPhaseCoordinatorOutput,
     FixPlannerOutput,
+    FixPlanV2Output,
+    FixReaderOutput,
+    FixRedTeamerOutput,
+    FixValidatorOutput,
     GroundingOutput,
     RedTeamReport,
 )
@@ -76,6 +84,15 @@ AGENT_TYPE_MAP = {
     "insight-synthesizer": "report",
     "fix-planner": "fix_planner",
     "fix-coordinator": "fix_coordinator",
+    # Fix orchestration agents
+    "fix-orchestrator": "fix_orchestrator",
+    "fix-phase-coordinator": "fix_phase_coordinator",
+    "fix-reader": "fix_reader",
+    "fix-planner-v2": "fix_planner_v2",
+    "fix-red-teamer": "fix_red_teamer",
+    "fix-applicator": "fix_applicator",
+    "fix-committer": "fix_committer",
+    "fix-validator": "fix_validator",
 }
 
 MODEL_MAP = {
@@ -86,6 +103,15 @@ MODEL_MAP = {
     "report": RedTeamReport,
     "fix_planner": FixPlannerOutput,
     "fix_coordinator": FixCoordinatorAskUserOutput,
+    # Fix orchestration models
+    "fix_orchestrator": FixOrchestratorOutput,
+    "fix_phase_coordinator": FixPhaseCoordinatorOutput,
+    "fix_reader": FixReaderOutput,
+    "fix_planner_v2": FixPlanV2Output,
+    "fix_red_teamer": FixRedTeamerOutput,
+    "fix_applicator": FixApplicatorOutput,
+    "fix_committer": FixCommitterOutput,
+    "fix_validator": FixValidatorOutput,
 }
 
 

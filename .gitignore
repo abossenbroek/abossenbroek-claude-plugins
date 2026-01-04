@@ -205,3 +205,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Node.js dependencies (red-agent plugin)
+# IMPORTANT: Do NOT ignore package-lock.json - it MUST be committed for security
+red-agent/node_modules/
+red-agent/.jscpd-report.json

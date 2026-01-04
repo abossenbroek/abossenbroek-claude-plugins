@@ -57,3 +57,27 @@ repos:
         pass_filenames: false
         files: \.claude-plugin/(plugin|marketplace)\.json$
         stages: [pre-push]
+
+      - id: npm-audit-jscpd
+        name: Audit npm dependencies (jscpd)
+        entry: bash -c "cd red-agent && [ -f package.json ] && npm audit --production || exit 0"
+        language: system
+        pass_filenames: false
+        files: red-agent/(package\.json|package-lock\.json)$
+        stages: [pre-commit]
+
+      - id: verify-npm-integrity
+        name: Verify npm integrity hashes
+        entry: python scripts/verify_npm_integrity.py
+        language: python
+        pass_filenames: false
+        files: red-agent/package-lock\.json$
+        stages: [pre-commit]
+
+      - id: check-npm-lock-committed
+        name: Check npm lock file is committed
+        entry: bash -c "[ -f red-agent/package.json ] && [ ! -f red-agent/package-lock.json ] && echo ERROR package-lock.json missing && exit 1 || exit 0"
+        language: system
+        pass_filenames: false
+        files: red-agent/package\.json$
+        stages: [pre-commit]

@@ -48,6 +48,7 @@ class RiskCategoryName(str, Enum):
     SCOPE_CREEP = "scope-creep"
     DEPENDENCY_BLINDNESS = "dependency-blindness"
     TEMPORAL_INCONSISTENCY = "temporal-inconsistency"
+    CODE_DUPLICATION = "code-duplication"
 
 
 class AnalysisMode(str, Enum):

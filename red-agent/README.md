@@ -28,6 +28,19 @@ Red Agent provides `/redteam` - a contrarian agent that systematically probes co
 
 The plugin includes a PostToolUse hook that validates agent outputs using Pydantic models. The hook uses `uv run --script` with inline dependencies, so validation "just works" without manual dependency installation.
 
+### Optional: jscpd (Duplicate Code Detection)
+
+For PR analysis with duplicate code detection:
+
+```bash
+cd red-agent/
+npm install
+```
+
+This installs [jscpd](https://github.com/kucherenko/jscpd) for detecting code duplication in PRs. If jscpd is not installed, the duplicate-code-analyzer will gracefully skip with a note in reports.
+
+**Security**: We use package-lock.json with SHA-512 integrity hashes, npm audit pre-commit hooks, and CI validation to protect against supply chain attacks.
+
 ## Usage
 
 ```bash
@@ -227,6 +240,225 @@ Contributions welcome! Areas of interest:
 - New attack styles
 - Improved grounding heuristics
 - Integration with external verification tools
+
+## PR Analysis Commands
+
+Red Agent includes specialized commands for analyzing pull requests and git diffs directly.
+
+### Available Commands
+
+| Command | Description |
+|---------|-------------|
+| `/redteam-pr:staged` | Analyze staged changes (`git diff --cached`) |
+| `/redteam-pr:working` | Analyze working directory changes (`git diff`) |
+| `/redteam-pr:diff <file>` | Analyze a specific diff file |
+| `/redteam-pr:branch <base>` | Analyze branch changes against base (default: main) |
+
+### Usage Examples
+
+```bash
+# Analyze staged changes before committing
+/redteam-pr:staged
+
+# Quick analysis of working directory changes
+/redteam-pr:working quick
+
+# Deep analysis of a specific diff file
+/redteam-pr:diff ./changes.diff deep
+
+# Analyze feature branch against main
+/redteam-pr:branch main
+
+# Focus on specific risk category
+/redteam-pr:staged focus:reasoning-flaws
+```
+
+### Mode Options
+
+All PR analysis commands support the same modes as `/redteam`:
+
+| Mode | Description |
+|------|-------------|
+| `quick` | Fast surface-level analysis (2-3 vectors, no grounding) |
+| `standard` | Balanced analysis (default) |
+| `deep` | Comprehensive review (all vectors, full grounding) |
+| `focus:X` | Deep dive on specific category |
+
+### User Scoping for Large PRs
+
+For PRs with many files, the commands automatically scope the analysis:
+
+1. **File Risk Scoring**: Each file is assigned a risk score (0.0-1.0) based on:
+   - File type (security-sensitive files score higher)
+   - Change patterns (authentication, validation changes)
+   - Size of changes
+
+2. **User Scoping**: For large PRs (15+ files), users may be asked to select focus areas:
+   - High-risk files are pre-selected
+   - Users can add/remove files from analysis scope
+   - Ensures analysis stays focused and efficient
+
+### Cascading Support for Massive PRs
+
+For PRs with 50+ files or 2000+ lines changed:
+
+1. **Automatic Parallelization**: Files are grouped into batches
+2. **8-16 Parallel Agents**: Multiple code-reasoning-attacker agents analyze batches concurrently
+3. **Result Aggregation**: Findings are merged and deduplicated
+4. **Pattern Detection**: Cross-file patterns are identified across all batches
+
+### PAL Integration (Optional)
+
+PR analysis supports optional PAL (Prompt-Agent-Loop) enhancement:
+
+- Structured prompt patterns for consistent analysis
+- Agent orchestration for complex multi-file PRs
+- Loop detection to prevent analysis cycles
+
+### Performance Characteristics
+
+| PR Size | Files | Lines Changed | Agents | Target Time |
+|---------|-------|---------------|--------|-------------|
+| Tiny | 1-2 | 1-10 | 4 | 10s |
+| Small | 2-5 | 10-100 | 4 | 20s |
+| Medium | 5-15 | 100-500 | 4 | 60s |
+| Large | 15-50 | 500-2000 | 8 | 120s |
+| Massive | 50+ | 2000+ | 16 | 300s (5 min) |
+
+### Example Workflows
+
+#### Pre-Commit Review
+
+```bash
+# Stage your changes
+git add -A
+
+# Run analysis on staged changes
+/redteam-pr:staged
+
+# Review findings and fix issues before committing
+```
+
+#### Feature Branch Review
+
+```bash
+# Switch to feature branch
+git checkout feature/new-auth
+
+# Analyze all changes against main
+/redteam-pr:branch main deep
+
+# Address findings before creating PR
+```
+
+#### CI/CD Integration
+
+```bash
+# In CI pipeline, analyze the PR diff
+/redteam-pr:diff $PR_DIFF_FILE standard
+
+# Fail pipeline if CRITICAL or HIGH findings
+```
+
+### Output Format
+
+PR analysis produces a structured report including:
+
+- **PR Summary**: File counts, additions/deletions, risk classification
+- **Risk Level**: Overall CRITICAL/HIGH/MEDIUM/LOW/INFO assessment
+- **Findings**: Issues organized by file and severity
+- **Breaking Changes**: API changes that may affect consumers
+- **Recommendations**: Prioritized action items
+- **Test Coverage Notes**: Comments on test changes
+
+### Sample Output
+
+```markdown
+## PR Red Team Analysis Report
+
+### Executive Summary
+This PR introduces authentication changes with moderate risk...
+
+### PR Summary
+- Files Changed: 5
+- Additions: 150 / Deletions: 30
+- PR Size: Medium
+- High Risk Files: src/auth/handler.ts
+
+### Risk Level: HIGH
+
+### Findings
+
+#### [PR-001] Missing Input Validation
+- **Severity**: HIGH
+- **File**: src/auth/handler.ts (lines 45-52)
+- **Confidence**: 85%
+
+**Description**: User input is not validated...
+
+**Recommendation**: Add input validation using...
+
+### Breaking Changes
+- API signature change in authenticate()...
+
+### Recommendations
+1. Add comprehensive input validation
+2. Implement proper error handling
+3. Add unit tests for edge cases
+```
+
+## Documentation
+
+Comprehensive guides for using red-agent:
+
+### Getting Started
+- **[Usage Guide](./docs/usage-guide.md)** - Complete command reference and workflows
+  - All commands explained (`/redteam`, `/redteam-pr`, `/redteam-fix-orchestrator`)
+  - Analysis modes (quick, standard, deep)
+  - Best practices and workflows
+  - Troubleshooting
+
+### Deep Dives
+- **[Attack Taxonomy](./docs/attack-taxonomy.md)** - Understanding the 10x10 attack matrix
+  - 11 risk categories detailed
+  - 10 attack styles explained
+  - Finding examples and severity guidelines
+  - Mode-specific behavior
+
+- **[Fix Orchestrator](./docs/fix-orchestrator.md)** - Automated issue remediation
+  - Interactive vs GitHub mode
+  - Fix strategies by category
+  - Complexity levels and risk assessment
+  - Batch processing patterns
+
+### Integration
+- **[GitHub Integration](./docs/github-integration.md)** - CI/CD and automation
+  - Claude Code agent setup
+  - GitHub Actions workflows
+  - PR review automation
+  - Automated fix PRs
+  - Security best practices
+
+- **[Security Documentation](./docs/jscpd-security.md)** - npm dependency security
+  - Multi-layer security architecture
+  - MITM and supply chain protection
+  - Incident response procedures
+  - Monitoring and alerts
+
+### Quick Links
+
+**Common Tasks:**
+- [Run first analysis](./docs/usage-guide.md#basic-commands)
+- [Analyze a PR](./docs/usage-guide.md#pr-analysis)
+- [Fix issues automatically](./docs/fix-orchestrator.md#quick-start)
+- [Setup GitHub Actions](./docs/github-integration.md#github-actions-workflows)
+- [Understand findings](./docs/attack-taxonomy.md#risk-categories-detailed)
+
+**Troubleshooting:**
+- ["No findings detected"](./docs/usage-guide.md#no-findings-detected)
+- ["Too many findings"](./docs/usage-guide.md#too-many-findings)
+- ["jscpd not available"](./docs/usage-guide.md#jscpd-not-available)
+- [Security incident response](./docs/jscpd-security.md#incident-response)
 
 ## License
 
