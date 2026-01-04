@@ -406,6 +406,110 @@ def run_cli() -> Callable[..., subprocess.CompletedProcess[str]]:
 
 
 # =============================================================================
+# Hook Testing Fixtures
+# =============================================================================
+
+
+@pytest.fixture
+def hook_input_factory() -> Callable[[dict[str, Any], str], dict[str, Any]]:
+    """Factory fixture for creating PostToolUse hook inputs.
+
+    Usage:
+        def test_example(hook_input_factory, valid_attacker_output):
+            hook_input = hook_input_factory(valid_attacker_output, "reasoning-attacker")
+            # hook_input is now a properly formatted PostToolUse input
+    """
+
+    def _create_input(
+        agent_output: dict[str, Any], agent_name: str = "reasoning-attacker"
+    ) -> dict[str, Any]:
+        return {
+            "tool_name": "Task",
+            "tool_input": {
+                "prompt": f"Launch {agent_name} to analyze",
+                "description": f"Running {agent_name}",
+            },
+            "tool_response": yaml.dump(agent_output),
+            "conversation_context": [],
+        }
+
+    return _create_input
+
+
+@pytest.fixture
+def valid_yaml_decision_outputs() -> dict[str, str]:
+    """Valid YAML decision outputs for testing parsing.
+
+    Provides example outputs for both continue and block decisions.
+    """
+    return {
+        "continue_json": '{"continue": true}',
+        "block_json": (
+            '{"decision": "block", '
+            '"reason": "Validation failed: missing required field"}'
+        ),
+        "continue_yaml": "decision: continue\n",
+        "block_yaml": (
+            "decision: block\nreason: |\n"
+            "  Validation failed for agent output:\n"
+            "  - field.path: Error message\n"
+            "    Hint: Fix the field\n"
+        ),
+    }
+
+
+@pytest.fixture
+def invalid_outputs_with_errors() -> list[tuple[dict[str, Any], list[str]]]:
+    """Invalid agent outputs paired with expected error field names.
+
+    Each tuple contains (invalid_output, expected_error_fields).
+    Used for testing error handling across different validation scenarios.
+    """
+    return [
+        # Empty output - should error on root field
+        ({}, ["attack_results", "grounding_results", "context_analysis"]),
+        # Invalid enum value
+        (
+            {
+                "attack_results": {
+                    "attack_type": "reasoning-attacker",
+                    "findings": [
+                        {"id": "RF-001", "severity": "INVALID"}  # Invalid enum
+                    ],
+                    "summary": {"total_findings": 1},
+                }
+            },
+            ["severity"],
+        ),
+        # Missing required nested field
+        (
+            {
+                "attack_results": {
+                    "attack_type": "reasoning-attacker",
+                    "findings": [
+                        {
+                            "id": "RF-001",
+                            "severity": "HIGH",
+                            # Missing: title, confidence, category, etc.
+                        }
+                    ],
+                    "summary": {"total_findings": 1},
+                }
+            },
+            ["title", "confidence", "category"],
+        ),
+        # String too short
+        (
+            {
+                "executive_summary": "Short",  # Too short for report
+                "risk_overview": {"overall_risk_level": "LOW", "categories": []},
+                "findings": {"critical": [], "high": [], "medium": [], "low": []},
+            },
+            ["executive_summary"],
+        ),
+    ]
+
+# =============================================================================
 # PR Analysis Fixtures
 # =============================================================================
 

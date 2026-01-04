@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - Both Plugins
+
+- **Validation Hook Standardization** - Unified PostToolUse hook behavior across red-agent and context-engineering
+  - YAML output format: `decision: continue` or `decision: block` with multiline `reason`
+  - Replaced JSON format (red-agent) and exit codes (context-engineering)
+  - Error formatter with actionable hints (missing fields, enum violations, range errors)
+  - Single source of truth: Import Pydantic models from `src/` (removed 179 lines of inline duplication)
+
+### Added - Red Agent
+
+- **Output Validation Documentation** - Added comprehensive validation section to red-agent/CLAUDE.md
+  - YAML format examples
+  - Text-based agent detection method
+  - Validation failure examples with hints
+
+### Added - Context Engineering
+
+- **Enhanced Validation Documentation** - Updated validation section in context-engineering/CLAUDE.md
+  - Model types reference (Analysis, Improvements, Grounding, Synthesis)
+  - Structure-based agent detection method
+  - Validation failure examples
+
+### Added - Repository
+
+- **PostToolUse Hook Standards** - Established standards for all future plugins
+  - Output format specification (YAML with decision/reason)
+  - Error message formatter template
+  - Model import pattern (never duplicate)
+  - Testing requirements (format, retry flow, error parsing)
+
+- **Multi-Agent Orchestration Patterns** - Documentation for complex multi-phase tasks
+  - Orchestrator → Phase Agents → File Agents hierarchy
+  - Parallelization strategies and dependency management
+  - Permission handling with settings.local.json checking
+  - Example structures and decision trees
+
+- **42 Comprehensive Tests** - Validation hook behavior test suite
+  - `test_hook_output_format.py` - YAML format validation (17 tests)
+  - `test_hook_retry_flow.py` - Retry behavior validation (9 tests)
+  - `test_error_message_parsing.py` - Error message quality (16 tests)
+  - Updated conftest.py with 3 new fixtures
+
+### Documentation
+
+- **Enhanced Pre-commit Workflow** - Auto-fix guidance and common issue reference
+  - Common auto-fixable issues (F401, COM812, I001, W291, W293)
+  - Manual fix requirements (E501, PLR0912, C901, ANN)
+  - Step-by-step workflow (identify → auto-fix → manual → verify)
+
+- **Phase-Based Planning Framework** - Decision framework for agent orchestration
+  - When to use orchestrator pattern (5+ files, dependencies, parallelization)
+  - Example decision trees for common scenarios
+  - Pattern diagrams and execution strategies
+
+### Technical Notes
+
+**Validation Improvements:**
+- Net reduction: 163 lines (45% smaller red-agent hook file)
+- Test coverage: 42 new tests, 302 total (100% pass rate)
+- Execution: 21-agent orchestration with parallelization (~12 minutes)
+
+**Benefits:**
+- Single source of truth eliminates model duplication
+- Consistent YAML format improves LLM parseability
+- Actionable hints improve agent retry success rate
+- Comprehensive tests validate hook behavior and recovery flows
+
 ## [1.4.0] - 2026-01-04
 
 ### Added

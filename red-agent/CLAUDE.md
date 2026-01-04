@@ -65,3 +65,22 @@ Main Session
 - Self-contained: No external MCP dependencies
 - Grounded: Findings verified with evidence scores
 - Transparent: Reports include confidence levels and limitations
+
+## Output Validation
+
+PostToolUse hooks validate sub-agent outputs against Pydantic models:
+- **Format**: YAML with `decision: continue` or `decision: block` + `reason`
+- **Models**: Imported from `src/red_agent/models/` (single source of truth)
+- **Agent Detection**: Text-based (searches prompt/description for agent names)
+- **Retry**: No enforced limit - coordinators decide strategy
+
+### Validation Failure Example
+
+```yaml
+decision: block
+reason: |
+  Validation failed for reasoning-attacker output:
+  - findings.0.id: ID must match pattern XX-NNN or XXX-NNN, got: invalid-format
+    Hint: Check the format and regenerate
+  Please fix these fields and regenerate the output.
+```

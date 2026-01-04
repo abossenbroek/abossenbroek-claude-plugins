@@ -1,6 +1,8 @@
 # Claude Code Plugins Repository
 
-A collection of Claude Code plugins with strict validation infrastructure. This repository demonstrates best practices for plugin development with type-safe validation using Pydantic models.
+A collection of production-grade Claude Code plugins with strict validation infrastructure. This repository demonstrates best practices for plugin development with type-safe validation using Pydantic models.
+
+**Plugins**: See `red-agent/CLAUDE.md` and `context-engineering/CLAUDE.md` for plugin-specific documentation.
 
 ## Critical Rules
 
@@ -20,7 +22,7 @@ uv run pre-commit run --all-files
 uv run pytest tests/ -v
 ```
 
-**Why**: 79 tests validate the entire validation infrastructure. Untested changes break silently.
+**Why**: Comprehensive test coverage validates the entire infrastructure. Untested changes break silently.
 
 ### 3. Never Commit Without Verification
 
@@ -33,7 +35,11 @@ Before any commit:
 
 ### 4. Use Pydantic Models for All Validation
 
-Agent output validation MUST use the Pydantic models in `red-agent/models/`. Do not create ad-hoc validation logic.
+Agent output validation MUST use Pydantic models. Do not create ad-hoc validation logic.
+
+**Model locations**:
+- Red-agent: `src/red_agent/models/`
+- Context-engineering: `src/context_engineering/models/`
 
 **Why**: Single source of truth. Manual validation diverges from the schema.
 
@@ -84,14 +90,68 @@ This repo uses feature branches. Main branch is protected.
 # Create feature branch
 git checkout -b feature/description
 
-# Make changes, then commit
+# Make changes, run validation chain, then commit
 git add -A
-git commit -m "Short description of change"
+git commit -m "feat(plugin): description"
 
 # Push and create PR
 git push -u origin feature/description
 gh pr create --title "Title" --body "Description"
+
+# IMPORTANT: Wait for CI to pass
+gh pr checks --watch
 ```
+
+**After Creating/Updating PR - ALWAYS Verify CI**:
+
+1. **Wait for GitHub Actions to complete**:
+   ```bash
+   # Watch CI checks in real-time
+   gh pr checks --watch
+
+   # Or check status manually
+   gh pr checks
+   ```
+
+2. **Verify all checks pass**:
+   - ✅ Conventional Commit check
+   - ✅ Pre-commit hooks (ruff, yaml, json, schema validation)
+   - ✅ Test suite (pytest)
+   - ✅ Plugin validation
+
+3. **If CI fails**:
+   - Review the failing check logs: `gh pr checks --web`
+   - Fix issues locally
+   - Commit and push fixes
+   - Wait for CI to re-run and pass
+
+**CRITICAL**: Never consider a PR "complete" until CI passes. A green PR means:
+- All 302 tests pass
+- All pre-commit hooks pass
+- All plugins validate against Claude Code
+- Conventional commit format verified
+
+**Monitoring CI**:
+```bash
+# View detailed status
+gh pr view --json statusCheckRollup
+
+# Open Actions page in browser
+gh pr checks --web
+
+# View specific workflow run
+gh run view <run-id>
+```
+
+**Conventional Commit Types**:
+- `feat(plugin)`: New features, new agents, architectural improvements
+- `fix(plugin)`: Bug fixes, broken validation, test fixes
+- `refactor(plugin)`: Code restructuring without behavior change
+- `docs(plugin)`: ONLY for README/changelog updates
+- `test(plugin)`: Adding or modifying tests
+- `chore(plugin)`: Dependency updates, config changes
+
+**IMPORTANT**: Agent/prompt changes are `feat` or `fix`, NOT `docs`. Markdown files in `agents/`, `coordinator-internal/`, `commands/` are executable code, not documentation.
 
 ---
 
@@ -143,22 +203,33 @@ class TestValidateAttackerOutput:
 
 ```
 .
-├── .claude-plugin/          # Marketplace manifest
-│   └── marketplace.json     # Plugin registry for this repo
-├── .claude/                  # Claude Code settings
-│   └── settings.local.json  # Allowed permissions
-├── red-agent/               # Red team analysis plugin
-│   ├── .claude-plugin/      # Plugin manifest
-│   ├── agents/              # Entry-point agents (launched by Task tool)
-│   ├── commands/            # Slash commands (user-invocable)
-│   ├── coordinator-internal/# Sub-agents (NOT directly invocable)
-│   ├── models/              # Pydantic models for validation
-│   ├── scripts/             # Python validation tools
-│   └── skills/              # Reusable skill definitions
-├── schemas/                 # JSON schemas for config validation
-├── scripts/                 # Repo-level validation scripts
-└── tests/                   # pytest test suite
+├── .claude-plugin/               # Marketplace manifest
+│   └── marketplace.json          # Plugin registry for this repo
+├── .claude/                      # Claude Code settings
+│   └── settings.local.json       # Allowed permissions
+├── red-agent/                    # Red team analysis plugin (see red-agent/CLAUDE.md)
+│   ├── .claude-plugin/plugin.json
+│   ├── agents/                   # Entry coordinators (firewall boundary)
+│   ├── coordinator-internal/     # Sub-agents (isolated from main session)
+│   ├── commands/                 # Slash commands
+│   └── skills/                   # Reusable skill definitions
+├── context-engineering/          # Context optimization plugin (see context-engineering/CLAUDE.md)
+│   ├── .claude-plugin/plugin.json
+│   ├── agents/                   # Entry coordinators (firewall boundary)
+│   ├── coordinator-internal/     # Sub-agents + phase executors
+│   ├── commands/                 # Slash commands
+│   ├── hooks/                    # PostToolUse validation hooks
+│   ├── scripts/                  # State/cache management CLIs
+│   └── skills/                   # Reusable skill definitions
+├── src/                          # Python package source
+│   ├── red_agent/models/         # Pydantic models for red-agent
+│   └── context_engineering/models/ # Pydantic models for context-engineering
+├── schemas/                      # JSON schemas for config validation
+├── scripts/                      # Repo-level validation scripts
+└── tests/                        # pytest test suite (260+ tests)
 ```
+
+**Note**: For plugin-specific architecture, commands, and patterns, refer to the respective `CLAUDE.md` files. This keeps documentation co-located with implementation.
 
 ### Key Files
 
@@ -166,11 +237,12 @@ class TestValidateAttackerOutput:
 |------|---------|
 | `pyproject.toml` | Dependencies, ruff config, pytest config |
 | `.pre-commit-config.yaml` | Pre-commit hooks |
-| `red-agent/models/` | Pydantic models (source of truth for validation) |
-| `red-agent/scripts/validate_agent_output.py` | Runtime validator for agent outputs |
+| `src/*/models/` | Pydantic models (source of truth for validation) |
+| `*/hooks/validate-agent-output.py` | PostToolUse hook for type-safe validation |
 | `scripts/validate_plugin_schemas.py` | JSON schema validator for configs |
 | `scripts/validate_against_claude_code.py` | Claude Code schema validation (pre-push) |
 | `scripts/check_config_hygiene.py` | Hygiene checks (author emails, empty arrays, etc.) |
+| `*/CLAUDE.md` | Plugin-specific documentation (architecture, patterns, rules) |
 
 ---
 
@@ -188,13 +260,99 @@ class TestValidateAttackerOutput:
    - Catches issues that local schemas might miss
 
 3. **Pydantic Models (Runtime)**
-   - Located in `red-agent/models/`
+   - Located in `red-agent/models/` and `context-engineering/models/`
    - Used by `validate_agent_output.py` to validate agent outputs
    - Provides type-safe validation with clear error messages
 
 4. **Tests (CI)**
    - 165+ tests covering all validators
    - Run via `uv run pytest tests/ -v`
+
+### PostToolUse Hook Output Format
+
+All plugins use YAML format for hook decisions:
+
+**Success**:
+```yaml
+decision: continue
+```
+
+**Failure**:
+```yaml
+decision: block
+reason: |
+  Detailed error message
+  with field-level hints
+```
+
+**Rationale**: YAML is more LLM-native than JSON, handles multiline errors cleanly, and requires no escaping.
+
+### PostToolUse Hook Standards (Established 2025-01)
+
+All plugins should follow these standards for PostToolUse hooks:
+
+#### Output Format
+Hooks must return YAML (not JSON or exit codes):
+
+**Success**:
+```yaml
+decision: continue
+```
+
+**Failure**:
+```yaml
+decision: block
+reason: |
+  Detailed error message
+  with field-level hints
+```
+
+**Rationale**: YAML is more LLM-native, handles multiline errors cleanly, requires no escaping.
+
+#### Error Message Format
+Use `format_validation_error()` function in all hooks:
+
+```python
+def format_validation_error(error: dict[str, Any]) -> str:
+    """Format Pydantic validation error with actionable hints."""
+    location = ".".join(str(x) for x in error["loc"])
+    message = error["msg"]
+    error_type = error.get("type", "")
+
+    formatted = f"- {location}: {message}"
+
+    # Add context-specific hints
+    if "missing" in error_type:
+        formatted += f"\n  Hint: Add '{location}' field to output"
+    elif "enum" in error_type or "literal" in error_type:
+        formatted += "\n  Hint: Check valid values in model definition"
+    elif "type_error.float" in error_type or "greater_than" in error_type:
+        formatted += "\n  Hint: Value must be numeric in valid range"
+    elif "string_too_short" in error_type:
+        formatted += "\n  Hint: Field requires more content"
+
+    return formatted
+```
+
+#### Model Imports
+Hooks must import Pydantic models from `src/` (single source of truth):
+
+```python
+# Add src directory to path
+SCRIPT_DIR = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(SCRIPT_DIR / "src"))
+
+# Import from centralized models
+from plugin_name.models import ModelName
+```
+
+**Never duplicate models inline in hooks.**
+
+#### Testing Requirements
+All hooks must have:
+- Output format tests (YAML parseability, continue/block decisions)
+- Retry flow tests (validation failure → retry → success)
+- Error message parsing tests (field paths, hints, actionability)
 
 ### When to Use Each
 
@@ -207,14 +365,32 @@ class TestValidateAttackerOutput:
 
 ---
 
-## Common Tasks
+## Common Workflows
+
+### Standard Validation Chain
+
+After making changes, run this validation sequence:
+
+```bash
+# 1. Run tests
+uv run pytest tests/ -v
+
+# 2. Run pre-commit hooks
+uv run pre-commit run --all-files
+
+# 3. Validate plugins against Claude Code
+claude plugin validate ./red-agent
+claude plugin validate ./context-engineering
+```
+
+All three must pass before committing.
 
 ### Add a New Pydantic Model
 
-1. Create model in appropriate file under `red-agent/models/`
-2. Export from `red-agent/models/__init__.py`
-3. Add tests in `tests/test_pydantic_models.py`
-4. Run tests: `uv run pytest tests/test_pydantic_models.py -v`
+1. Create model in appropriate file under `src/*/models/`
+2. Export from `src/*/models/__init__.py`
+3. Add tests in `tests/test_*_models.py`
+4. Run validation chain (above)
 
 ### Add a New Validator
 
@@ -224,17 +400,39 @@ class TestValidateAttackerOutput:
 
 ### Fix a Failing Pre-commit
 
+**Workflow**:
+1. Run pre-commit to identify issues
+2. Auto-fix what's possible (ruff, formatting)
+3. Manually fix remaining issues
+4. Re-run to verify
+
 ```bash
 # See what's wrong
 uv run pre-commit run --all-files
 
-# Auto-fix ruff issues
+# Auto-fix ruff issues (most violations)
 uv run ruff check --fix .
 uv run ruff format .
 
-# Re-run to verify
+# Re-run to verify - check if any issues remain
 uv run pre-commit run --all-files
+
+# If line-length issues remain (E501), manually fix:
+# - Break long lines at logical points
+# - Use parentheses for implicit line continuation
+# - Keep strings readable
 ```
+
+**Common Auto-Fixable Issues**:
+- Unused imports (F401)
+- Missing trailing commas (COM812)
+- Import sorting (I001)
+- Whitespace issues (W291, W293)
+
+**Requires Manual Fix**:
+- Line too long (E501) - requires judgment on where to break
+- Complex logic issues (PLR0912, C901)
+- Missing type hints (ANN)
 
 ### Add a New Plugin
 
@@ -287,11 +485,54 @@ Test by loading the plugin in Claude Code to verify the schema is accepted.
 
 Use Pydantic models. Never create ad-hoc validation.
 
-### 5. Am I unsure about a schema field?
+### 5. Should I spawn an agent with Task tool?
+
+**YES - Spawn agents to prevent context pollution when:**
+- Task requires multiple files/rounds of analysis
+- Task has independent sub-tasks that can be parallelized
+- Task involves complex multi-step workflows
+- You're implementing a plan with compartmentalized fixes
+
+**NO - Work directly when:**
+- Task is a single straightforward edit
+- You have all context needed in current session
+- Task requires tight iteration/debugging loop
+
+**Pattern**: Main session = thin orchestrator, agents = focused workers with minimal context
+
+### 6. Should I break this into phases with multiple agents?
+
+**YES - Use phase-based orchestration when:**
+- Task has 5+ file modifications across different conceptual areas
+- Clear sequential dependencies (Phase A must complete before Phase B)
+- Significant parallelization opportunity (multiple independent sub-tasks)
+- Need for centralized verification/aggregation at the end
+
+**NO - Use simpler approaches when:**
+- Task has 1-4 related file modifications
+- All work can be done in parallel with no dependencies
+- Task is exploratory/research-focused
+- Single agent can handle the full context
+
+**Phase-Based Pattern**:
+```
+Main Session (Orchestrator)
+  ↓
+Spawn Phase 1 (blocking) → Spawn Phases 2-5 (parallel)
+  ↓                              ↓
+File Agents                  File Agents (each phase)
+```
+
+**Example Decision Tree**:
+- "Refactor validation hooks across 2 plugins" → Phase-based (Phase 1: refactor models, Phases 2-5: parallel format/test/docs changes)
+- "Add new validation model" → Direct implementation (single conceptual change)
+- "Fix bug in hook" → Direct implementation (focused scope)
+
+### 7. Am I unsure about a schema field?
 
 Check `sdk-tools.d.ts` in the Claude Code package for tool schemas. For plugin/marketplace schemas, test by loading in Claude Code.
 
-### 6. Could this affect users?
+### 8. Could this affect users?
 
 Consider backwards compatibility. Avoid breaking changes without explicit request.
 
@@ -347,28 +588,142 @@ This is the canonical reference for tool input schemas (AskUserQuestion, Bash, e
 
 ---
 
+## Agent Orchestration Patterns
+
+### When Executing Complex Plans
+
+For multi-fix implementations (like architectural refactors):
+
+**Orchestration Pattern**:
+1. **Main Session** = Thin orchestrator (routing only, minimal logic)
+2. **Implementation Agent** per fix:
+   - Receives minimal context (fix spec + file paths)
+   - Creates/modifies files
+   - Commits frequently (`wip: description`)
+   - Returns completion status
+3. **Validation Agent** after each fix:
+   - Receives success criteria + test commands
+   - Runs validation chain
+   - Returns PASS/FAIL + specific issues
+4. **Remediation Agent** if validation fails:
+   - Max 2 rounds before escalating to user
+   - Gets specific issues to fix
+
+**Dependency Management**:
+- Identify parallel vs sequential fixes
+- Launch independent fixes in parallel (single message, multiple Task calls)
+- Wait for dependencies before launching dependent fixes
+
+**Context Reduction**:
+- Each agent gets ONLY what it needs (not full codebase)
+- Use file references/IDs instead of full content
+- State/cache systems for data sharing between agents
+
+### Parallel Agent Spawning
+
+```python
+# CORRECT - Multiple agents in one message (parallel)
+"I'll spawn 3 agents in parallel"
+<Task for fix-1>
+<Task for fix-2>
+<Task for fix-3>
+
+# WRONG - Sequential spawning (slower)
+"Let me spawn agent 1"
+<Task for fix-1>
+[wait for response]
+"Now agent 2"
+<Task for fix-2>
+```
+
+### Multi-Agent Orchestration for Complex Multi-Phase Tasks
+
+For tasks requiring multiple coordinated phases (like refactoring across plugins, comprehensive testing suites, or documentation updates):
+
+**Pattern**: Orchestrator → Phase Agents → File Agents
+
+1. **Orchestrator Agent** (main session):
+   - Thin coordinator that spawns phase agents
+   - Monitors for permission blocks
+   - Aggregates results
+   - Runs verification checklist
+
+2. **Phase Agents** (spawned by orchestrator):
+   - One agent per independent phase
+   - Each phase spawns its own file-specific agents
+   - Phases with dependencies run sequentially
+   - Phases without dependencies run in parallel
+
+3. **File Agents** (spawned by phase agents):
+   - One agent per file modification
+   - Spawn in parallel within each phase
+   - Focused, single-purpose modifications
+
+**Dependency Management**:
+- Identify which phases depend on others
+- Sequential: Phase 1 → wait → Phase 2
+- Parallel: Phases 2, 3, 4, 5 spawn together (single message, multiple Task calls)
+
+**Example Structure**:
+```
+Orchestrator
+├── Phase 1 (Sequential - blocks others)
+├── Phase 2 (Parallel) ─┬─ file-agent-1
+│                        └─ file-agent-2
+├── Phase 3 (Parallel) ─┬─ file-agent-3
+│                        └─ file-agent-4
+└── Phase 4 (Parallel)
+```
+
+**When to Use**:
+- Tasks involving 5+ file modifications across multiple conceptual areas
+- Tasks with clear phase boundaries and some dependencies
+- Tasks where parallelization significantly reduces execution time
+
+**Permission Handling**:
+- Each phase/file agent reports permission blocks immediately
+- Orchestrator aggregates and alerts user
+- Check `.claude/settings.local.json` for pre-approved permissions before alerting
+
+**Before Alerting User About Permissions**:
+1. Check `.claude/settings.local.json` for pre-approved permissions:
+```json
+{
+  "allowedToolPatterns": [
+    "Bash(git add:*)",
+    "Bash(git commit:*)",
+    "Edit",
+    "Write"
+  ]
+}
+```
+
+2. Only alert if permission is NOT in allowedToolPatterns
+
+3. If blocked by new permission:
+   - Report which agent/phase was blocked
+   - Report which specific file/operation needs permission
+   - Report required permission pattern to add
+
+**Pattern**: Check local settings → Use approved permissions → Alert only for new ones
+
 ## Quick Reference
 
 ```bash
 # Install/update dependencies
 uv sync --all-extras
 
-# Run all tests
+# Standard validation chain (run after changes)
 uv run pytest tests/ -v
-
-# Run pre-commit
 uv run pre-commit run --all-files
-
-# Validate against Claude Code (runs on push)
-uv run python scripts/validate_against_claude_code.py
-# or directly:
 claude plugin validate ./red-agent
+claude plugin validate ./context-engineering
 
 # Fix ruff issues
 uv run ruff check --fix . && uv run ruff format .
 
-# Create commit
-git add -A && git commit -m "message"
+# Create commit (use correct type!)
+git add -A && git commit -m "feat(plugin): description"
 
 # Push (triggers pre-push Claude Code validation)
 git push && gh pr create
