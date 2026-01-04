@@ -13,211 +13,57 @@ Pydantic models. On failure, blocks with error details so the coordinator
 can retry the sub-agent. On success, passes silently.
 """
 
-import contextlib
 import json
 import re
 import sys
+from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, Field, ValidationError, field_validator
+from pydantic import ValidationError
 
-# Import fix orchestration models from centralized location
-# Fallback for when running hook directly (not as package)
-with contextlib.suppress(ImportError):
-    from red_agent.models import (
-        FixApplicatorOutput,
-        FixCommitterOutput,
-        FixOrchestratorOutput,
-        FixPhaseCoordinatorOutput,
-        FixPlanV2Output,
-        FixReaderOutput,
-        FixRedTeamerOutput,
-        FixValidatorOutput,
-        QuestionBatch,
-    )
+# Add src directory to path to import models
+SCRIPT_DIR = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(SCRIPT_DIR / "src"))
 
-# ============================================================================
-# Inline Pydantic Models (subset needed for validation)
-# ============================================================================
-
-
-class AttackerFinding(BaseModel):
-    """A single finding from an attacker agent."""
-
-    id: str
-    title: str
-    severity: str
-    confidence: str | int | float
-    evidence: list[str] = Field(default_factory=list)
-
-    @field_validator("id")
-    @classmethod
-    def validate_id_format(cls, v: str) -> str:
-        if not re.match(r"^[A-Z]{2,3}-\d{3}$", v):
-            msg = f"ID must match pattern XX-NNN or XXX-NNN, got: {v}"
-            raise ValueError(msg)
-        return v
+# ruff: noqa: E402 (imports after sys.path modification)
+from red_agent.models import (
+    AttackerOutput,
+    AttackStrategyOutput,
+    ContextAnalysisOutput,
+    FixApplicatorOutput,
+    FixCommitterOutput,
+    FixCoordinatorAskUserOutput,
+    FixOrchestratorOutput,
+    FixPhaseCoordinatorOutput,
+    FixPlannerOutput,
+    FixPlanV2Output,
+    FixReaderOutput,
+    FixRedTeamerOutput,
+    FixValidatorOutput,
+    GroundingOutput,
+    RedTeamReport,
+)
 
 
-class AttackerOutput(BaseModel):
-    """Output from attacker agents."""
+def format_validation_error(error: dict[str, Any]) -> str:
+    """Format Pydantic validation error with actionable hints."""
+    location = ".".join(str(x) for x in error["loc"])
+    message = error["msg"]
+    error_type = error.get("type", "")
 
-    attack_results: dict[str, Any]
+    formatted = f"- {location}: {message}"
 
+    if "missing" in error_type:
+        formatted += f"\n  Hint: Add '{location}' field to output"
+    elif "enum" in error_type or "literal" in error_type:
+        formatted += "\n  Hint: Check valid values in model definition"
+    elif "type_error.float" in error_type or "greater_than" in error_type:
+        formatted += "\n  Hint: Value must be numeric in valid range"
+    elif "string_too_short" in error_type:
+        formatted += "\n  Hint: Field requires more content"
 
-class GroundingAssessment(BaseModel):
-    """Assessment of a single finding's grounding."""
-
-    finding_id: str
-    status: str
-    evidence_strength: float = Field(ge=0.0, le=1.0)
-
-
-class GroundingOutput(BaseModel):
-    """Output from grounding agents."""
-
-    grounding_results: dict[str, Any]
-    agent: str
-
-
-class ContextAnalysisOutput(BaseModel):
-    """Output from context analyzer."""
-
-    context_analysis: dict[str, Any]
-
-
-class AttackStrategyOutput(BaseModel):
-    """Output from attack strategist."""
-
-    attack_strategy: dict[str, Any]
-
-
-class RedTeamReport(BaseModel):
-    """Final synthesized report."""
-
-    executive_summary: str = Field(min_length=50)
-    risk_level: str
-    findings: list[dict[str, Any]] = Field(default_factory=list)
-
-
-class FixOption(BaseModel):
-    """A single fix option for a finding."""
-
-    label: str
-    description: str
-    pros: list[str] = Field(default_factory=list)
-    cons: list[str] = Field(default_factory=list)
-    complexity: str  # LOW, MEDIUM, HIGH
-    affected_components: list[str] = Field(default_factory=list)
-
-    @field_validator("complexity")
-    @classmethod
-    def validate_complexity(cls, v: str) -> str:
-        valid = {"LOW", "MEDIUM", "HIGH"}
-        if v.upper() not in valid:
-            msg = f"Complexity must be LOW, MEDIUM, or HIGH, got: {v}"
-            raise ValueError(msg)
-        return v.upper()
-
-
-class FixPlannerOutput(BaseModel):
-    """Output from fix-planner agent."""
-
-    finding_id: str
-    finding_title: str
-    options: list[FixOption] = Field(min_length=1, max_length=3)
-
-
-class FindingWithFixes(BaseModel):
-    """A finding with its fix options."""
-
-    finding_id: str
-    title: str
-    severity: str
-    options: list[FixOption] = Field(min_length=1, max_length=3)
-
-
-class FixCoordinatorOutput(BaseModel):
-    """Output from fix-coordinator agent (legacy format)."""
-
-    findings_with_fixes: list[FindingWithFixes] = Field(default_factory=list)
-
-
-# Valid severity levels for question batches
-QUESTION_BATCH_SEVERITY_LEVELS = {"CRITICAL", "HIGH", "MEDIUM", "CRITICAL_HIGH"}
-
-
-class AskUserQuestionOption(BaseModel):
-    """Option for AskUserQuestion (matches Claude Code schema)."""
-
-    label: str
-    description: str
-
-
-class AskUserQuestion(BaseModel):
-    """A question for AskUserQuestion (matches Claude Code schema)."""
-
-    question: str = Field(min_length=10)
-    header: str = Field(max_length=12)
-    multiSelect: bool
-    options: list[AskUserQuestionOption] = Field(min_length=2, max_length=4)
-
-
-class QuestionBatch(BaseModel):
-    """A batch of questions grouped by severity."""
-
-    batch_number: int = Field(ge=1)
-    severity_level: str
-    questions: list[AskUserQuestion] = Field(min_length=1, max_length=4)
-
-    @field_validator("severity_level")
-    @classmethod
-    def validate_severity_level(cls, v: str) -> str:
-        if v not in QUESTION_BATCH_SEVERITY_LEVELS:
-            msg = f"Severity '{v}' must be one of {QUESTION_BATCH_SEVERITY_LEVELS}"
-            raise ValueError(msg)
-        return v
-
-
-class FindingDetailOption(BaseModel):
-    """Full option details for implementation summary."""
-
-    label: str
-    description: str
-    pros: list[str] = Field(default_factory=list)
-    cons: list[str] = Field(default_factory=list)
-    complexity: str
-    affected_components: list[str] = Field(default_factory=list)
-
-    @field_validator("complexity")
-    @classmethod
-    def validate_complexity(cls, v: str) -> str:
-        valid = {"LOW", "MEDIUM", "HIGH"}
-        if v.upper() not in valid:
-            msg = f"Complexity must be LOW, MEDIUM, or HIGH, got: {v}"
-            raise ValueError(msg)
-        return v.upper()
-
-
-class FindingDetail(BaseModel):
-    """Full finding details for implementation summary."""
-
-    finding_id: str
-    title: str
-    severity: str
-    full_options: list[FindingDetailOption] = Field(min_length=1, max_length=3)
-
-
-class FixCoordinatorAskUserOutput(BaseModel):
-    """Output from fix-coordinator in AskUserQuestion-compatible format."""
-
-    question_batches: list[QuestionBatch] = Field(min_length=1)
-    finding_details: list[FindingDetail] = Field(default_factory=list)
-
-
-# Fix orchestration models imported from red_agent.models.fix_orchestration
-# (Lines 204-275 removed - now using centralized models)
+    return formatted
 
 
 # ============================================================================
@@ -238,7 +84,7 @@ AGENT_TYPE_MAP = {
     "insight-synthesizer": "report",
     "fix-planner": "fix_planner",
     "fix-coordinator": "fix_coordinator",
-    # New fix orchestration agents
+    # Fix orchestration agents
     "fix-orchestrator": "fix_orchestrator",
     "fix-phase-coordinator": "fix_phase_coordinator",
     "fix-reader": "fix_reader",
@@ -257,7 +103,7 @@ MODEL_MAP = {
     "report": RedTeamReport,
     "fix_planner": FixPlannerOutput,
     "fix_coordinator": FixCoordinatorAskUserOutput,
-    # New fix orchestration models
+    # Fix orchestration models
     "fix_orchestrator": FixOrchestratorOutput,
     "fix_phase_coordinator": FixPhaseCoordinatorOutput,
     "fix_reader": FixReaderOutput,
@@ -311,7 +157,7 @@ def validate_output(data: dict[str, Any], output_type: str) -> tuple[bool, list[
         model.model_validate(data)
         return True, []
     except ValidationError as e:
-        errors = [f"{err['loc']}: {err['msg']}" for err in e.errors()]
+        errors = [format_validation_error(err) for err in e.errors()]
         return False, errors
 
 
@@ -322,13 +168,13 @@ def main() -> None:
         hook_input = json.load(sys.stdin)
     except json.JSONDecodeError:
         # Not valid JSON, skip
-        print(json.dumps({"continue": True}))
+        print("decision: continue")
         return
 
     # Check if this is a Task tool invocation
     tool_name = hook_input.get("tool_name", "")
     if tool_name != "Task":
-        print(json.dumps({"continue": True}))
+        print("decision: continue")
         return
 
     # Extract agent name from tool input
@@ -337,13 +183,13 @@ def main() -> None:
 
     if not agent_name:
         # Not a red-agent sub-agent, skip
-        print(json.dumps({"continue": True}))
+        print("decision: continue")
         return
 
     # Get output type for this agent
     output_type = AGENT_TYPE_MAP.get(agent_name)
     if not output_type:
-        print(json.dumps({"continue": True}))
+        print("decision: continue")
         return
 
     # Extract agent response
@@ -356,18 +202,15 @@ def main() -> None:
 
     if not parsed_output:
         # Could not parse YAML - block and request fix
-        print(
-            json.dumps(
-                {
-                    "decision": "block",
-                    "reason": (
-                        f"YAML parse error in {agent_name} output. "
-                        "Could not find valid YAML block. "
-                        "Please wrap output in ```yaml ... ``` with valid YAML syntax."
-                    ),
-                }
-            )
+        error_message = (
+            f"YAML parse error in {agent_name} output. "
+            "Could not find valid YAML block. "
+            "Please wrap output in ```yaml ... ``` with valid YAML syntax."
         )
+        print("decision: block")
+        print("reason: |")
+        for line in error_message.split("\n"):
+            print(f"  {line}")
         return
 
     # Validate against model
@@ -375,21 +218,18 @@ def main() -> None:
 
     if is_valid:
         # Success - pass silently (no message to user)
-        print(json.dumps({"continue": True}))
+        print("decision: continue")
     else:
         # Validation failed - block with specific errors
-        error_list = "\n- ".join(errors[:5])  # Limit to first 5 errors
-        print(
-            json.dumps(
-                {
-                    "decision": "block",
-                    "reason": (
-                        f"Validation failed for {agent_name} output:\n- {error_list}\n"
-                        "Please fix these fields and regenerate the output."
-                    ),
-                }
-            )
+        error_list = "\n".join(errors[:5])  # Limit to first 5 errors
+        error_message = (
+            f"Validation failed for {agent_name} output:\n{error_list}\n"
+            "Please fix these fields and regenerate the output."
         )
+        print("decision: block")
+        print("reason: |")
+        for line in error_message.split("\n"):
+            print(f"  {line}")
 
 
 if __name__ == "__main__":
