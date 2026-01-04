@@ -11,15 +11,15 @@
   "plugins": [
     {
       "name": "red-agent",
-      "version": "1.3.0",
-      "description": "Adversarial red/rainbow team analysis plugin for Claude Code. Finds weaknesses in LLM interactions through systematic probing using a 10x10 attack taxonomy. Now includes PR red-team analysis with 4 git operation modes.",
+      "version": "1.4.0",
+      "description": "Adversarial red/rainbow team analysis plugin for Claude Code. Finds weaknesses in LLM interactions through systematic probing using a 10x10 attack taxonomy (11 categories for PR analysis including code-duplication). Includes automated fix orchestrator with GitHub integration, PR analysis with 4 git modes, and comprehensive security documentation.",
       "author": {
         "name": "Red Agent Team",
         "email": "abossenbroek@users.noreply.github.com"
       },
       "source": "./red-agent",
       "category": "security",
-      "tags": ["security", "red-team", "adversarial", "analysis"]
+      "tags": ["security", "red-team", "adversarial", "analysis", "pr-review", "code-quality", "duplicate-detection"]
     },
     {
       "name": "context-engineering",

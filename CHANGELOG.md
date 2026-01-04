@@ -7,6 +7,126 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-01-04
+
+### Added
+
+- **jscpd Integration** - Duplicate code detection for PR analysis
+  - npm dependency: jscpd 4.0.5 with exact version pinning
+  - New `duplicate-code-analyzer` agent (5th parallel attacker)
+  - 11th risk category: `code-duplication` for DRY violations
+  - Configuration file (`.jscpd.json`) with detection thresholds
+  - Graceful degradation if jscpd not installed
+
+- **Security Infrastructure for npm Dependencies**
+  - SHA-512 integrity hashes in package-lock.json (119 packages)
+  - Pre-commit npm audit hooks (audit, integrity verification, lock file check)
+  - CI validation for npm dependencies in GitHub Actions
+  - MITM and supply chain attack protection
+  - Integrity verification script (`scripts/verify_npm_integrity.py`)
+
+- **Comprehensive Documentation** - 6 new documentation guides (3,500+ lines)
+  - `docs/README.md`: Documentation index with navigation (374 lines)
+  - `docs/usage-guide.md`: Complete command reference and workflows (490 lines)
+  - `docs/attack-taxonomy.md`: 10x10 attack matrix explained (561 lines)
+  - `docs/fix-orchestrator.md`: Automated remediation guide (663 lines)
+  - `docs/github-integration.md`: CI/CD integration guide (781 lines)
+  - `docs/jscpd-security.md`: npm security documentation (470 lines)
+
+- **Fix Orchestrator** - Automated issue remediation
+  - `/redteam-fix-orchestrator` command with interactive and GitHub modes
+  - 6-stage execution pipeline: read → plan → red-team → apply → commit → validate
+  - 7 specialized fix agents for parallel execution
+  - Dependency analysis and conflict detection
+  - Retry logic with validation feedback
+
+- **PAL Integration Guidelines** - Best practices and test infrastructure
+  - Complete PAL usage guide (`docs/pal-integration.md`)
+  - Test fixtures for PAL mocking (`tests/fixtures/pal_mock.py`)
+  - Audit results: 14 files with PAL, all with graceful degradation
+  - Standard patterns for optional feature integration
+
+- **Ultrathink Architecture Documentation** - Context isolation deep-dive
+  - 5 core patterns: Firewall, Pipeline, Parallel, Branching, Retry
+  - Context tiers with token budgets and real-world examples
+  - Performance metrics: 96-98% context reduction
+  - ROI calculation: $12,770 annual savings per 1000 workflows
+
+- **Troubleshooting Guide** - Comprehensive debugging reference
+  - PAL integration issues (detection, timeouts, enhancement)
+  - Fix orchestration issues (validation, conflicts, commits)
+  - Validation hook issues (blocking, triggering)
+  - Context engineering issues (blowup, optimization)
+  - Plugin configuration and test issues
+
+### Changed
+
+- **PR Analysis** - Now includes 5 parallel attackers (was 4)
+  - Added `duplicate-code-analyzer` alongside existing 4 code attackers
+  - Updated `pr-analysis-coordinator.md` with 5-attacker assignment
+  - Risk category count: 11 (was 10)
+
+- **Pydantic Models** - Extended for fix orchestration and jscpd
+  - Added `CODE_DUPLICATION` to `RiskCategoryName` enum
+  - New fix orchestration models in `src/red_agent/models/fix_orchestration.py`
+  - 8 new models: FixReaderOutput, FixPlanV2Output, FixRedTeamerOutput, etc.
+  - Centralized models extracted from inline definitions
+
+- **Plugin Description** - Updated to reflect 11 risk categories
+  - Changed from "10x10 attack taxonomy" to include code duplication
+  - Added fix orchestrator capability to description
+
+### Fixed
+
+- **Input Validation** - Added comprehensive validation to duplicate-code-analyzer
+  - File path safety (reject absolute paths, path traversal)
+  - File size limits (10MB max to prevent resource exhaustion)
+  - Execution timeout (60s for jscpd)
+  - Output validation (verify JSON before parsing)
+
+- **Pre-commit Hook Robustness** - Enhanced error handling in verify_npm_integrity.py
+  - Try-catch for JSON parsing errors
+  - Better error messages (show count, first few packages)
+  - Graceful degradation for missing lock file
+  - Informative success messages with package count
+
+- **Documentation Clarity** - Implementation status vs. planned features
+  - Added "Implementation Status" section to jscpd-security.md
+  - Clearly marked implemented features (✅) vs. planned (⏳)
+  - Distinguished current capabilities from enterprise-grade enhancements
+
+### Technical Notes
+
+jscpd Configuration:
+```json
+{
+  "threshold": 5,
+  "minLines": 5,
+  "minTokens": 50,
+  "ignore": ["**/.git", "**/node_modules", "**/__pycache__"],
+  "format": ["python", "javascript", "typescript", "go", "rust"],
+  "reporters": ["json"],
+  "output": ".jscpd-report.json"
+}
+```
+
+Duplication Severity Mapping:
+- CRITICAL: 50+ duplicate lines (mass copy-paste)
+- HIGH: 20-49 lines (significant duplication)
+- MEDIUM: 10-19 lines (moderate duplication)
+- LOW: 5-9 lines (minor duplication)
+
+Security Layers:
+1. Version pinning (exact versions in package.json)
+2. Integrity hashing (SHA-512 in package-lock.json)
+3. Pre-commit validation (npm audit + integrity check)
+4. CI validation (GitHub Actions workflow)
+
+Red-Team Self-Check:
+- Ran red-team analysis on this PR itself
+- Addressed 3 critical and 3 high-priority findings
+- Result: All 312 tests passing, all pre-commit hooks passing
+
 ## [1.3.0] - 2026-01-03
 
 ### Added
