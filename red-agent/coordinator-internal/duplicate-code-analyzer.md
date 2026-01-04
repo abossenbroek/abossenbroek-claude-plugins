@@ -50,6 +50,66 @@ fi
 - Proceed with duplication analysis
 - Set `jscpd_available: true` in output
 
+## Input Validation
+
+Before processing files, validate all inputs:
+
+**File Path Safety**:
+```bash
+# Validate paths are relative and within repository
+for file in "${files[@]}"; do
+    # Reject absolute paths
+    if [[ "$file" == /* ]]; then
+        echo "ERROR: Absolute path not allowed: $file"
+        continue
+    fi
+
+    # Reject path traversal attempts
+    if [[ "$file" == *".."* ]]; then
+        echo "ERROR: Path traversal detected: $file"
+        continue
+    fi
+
+    # Verify file exists
+    if [ ! -f "$file" ]; then
+        echo "WARN: File not found: $file"
+        continue
+    fi
+done
+```
+
+**File Size Limits**:
+```bash
+# Skip files larger than 10MB (prevents resource exhaustion)
+MAX_SIZE=$((10 * 1024 * 1024))  # 10MB in bytes
+
+for file in "${files[@]}"; do
+    size=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null)
+    if [ "$size" -gt "$MAX_SIZE" ]; then
+        echo "WARN: Skipping large file (${size} bytes): $file"
+        continue
+    fi
+done
+```
+
+**Execution Timeout**:
+```bash
+# Set timeout for jscpd execution (prevents hanging)
+timeout 60s red-agent/node_modules/.bin/jscpd [args] || {
+    echo "ERROR: jscpd execution timeout"
+    exit 1
+}
+```
+
+**Output Validation**:
+```bash
+# Verify jscpd output is valid JSON before parsing
+if ! jq empty .jscpd-report.json 2>/dev/null; then
+    echo "ERROR: Invalid JSON output from jscpd"
+    exit 1
+fi
+```
+
 ## Duplication Detection Techniques
 
 ### jscpd Invocation

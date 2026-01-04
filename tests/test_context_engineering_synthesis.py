@@ -285,7 +285,7 @@ class TestImprovementReportModel:
         """Test ImprovementReport with no improvements."""
         report = ImprovementReport(
             executive_summary=(
-                "Plugin already follows all SOTA patterns. " "No improvements needed."
+                "Plugin already follows all SOTA patterns. No improvements needed."
             ),
             plugin_name="well-designed-plugin",
             analysis_mode="deep",

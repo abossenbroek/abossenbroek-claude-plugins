@@ -530,9 +530,7 @@ def valid_code_attacker_output():
                         "file_path": "src/auth/handler.ts",
                         "line_numbers": [47, 52],
                         "diff_snippet": (
-                            "+ if (user.isValid) {\n"
-                            "+   return authenticate(user);\n"
-                            "+ }"
+                            "+ if (user.isValid) {\n+   return authenticate(user);\n+ }"
                         ),
                         "function_name": "validateUser",
                     },

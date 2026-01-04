@@ -8,8 +8,15 @@ from pathlib import Path
 
 def verify_integrity(lock_file: Path) -> bool:
     """Check all packages have integrity field."""
-    with lock_file.open() as f:
-        lock = json.load(f)
+    try:
+        with lock_file.open() as f:
+            lock = json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"ERROR: Invalid JSON in package-lock.json: {e}")
+        return False
+    except Exception as e:
+        print(f"ERROR: Failed to read package-lock.json: {e}")
+        return False
 
     missing = []
     for name, data in lock.get("packages", {}).items():
@@ -19,17 +26,19 @@ def verify_integrity(lock_file: Path) -> bool:
             missing.append(name)
 
     if missing:
-        print(f"ERROR: Missing integrity hashes: {missing}")
+        print(f"ERROR: Missing integrity hashes in {len(missing)} package(s)")
+        print(f"First few: {missing[:5]}")
         return False
 
-    print("OK: All packages have integrity hashes")
+    total_packages = len(lock.get("packages", {})) - 1  # Exclude root
+    print(f"OK: All {total_packages} packages have integrity hashes")
     return True
 
 
 if __name__ == "__main__":
     lock = Path("red-agent/package-lock.json")
     if not lock.exists():
-        print("WARNING: package-lock.json not found (jscpd not installed)")
+        print("INFO: package-lock.json not found (jscpd not installed)")
         sys.exit(0)
 
     sys.exit(0 if verify_integrity(lock) else 1)
