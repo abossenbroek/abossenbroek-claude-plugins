@@ -1,0 +1,18 @@
+{
+  "threshold": 5,
+  "minLines": 5,
+  "minTokens": 50,
+  "ignore": [
+    "**/.git",
+    "**/node_modules",
+    "**/__pycache__",
+    "**/*.pyc",
+    "**/dist",
+    "**/build",
+    "**/.venv",
+    "**/test_*.py"
+  ],
+  "format": ["python", "javascript", "typescript", "go", "rust"],
+  "reporters": ["json"],
+  "output": ".jscpd-report.json"
+}

@@ -127,9 +127,9 @@ Receive: List of attack vectors to execute based on mode.
 
 ### Phase 3: Code Attack Execution (FILTERED CONTEXT, PARALLEL)
 
-**CRITICAL: Launch ALL 4 attackers simultaneously in a SINGLE message with 4 Task tool uses for maximum parallelization.**
+**CRITICAL: Launch ALL 5 attackers simultaneously in a SINGLE message with 5 Task tool uses for maximum parallelization.**
 
-Launch all 4 code attackers IN PARALLEL (single message, 4 Task tool calls):
+Launch all 5 code attackers IN PARALLEL (single message, 5 Task tool calls):
 
 ```
 Task: Launch code-reasoning-attacker
@@ -191,6 +191,21 @@ Prompt:
       hunks: [relevant diff hunks for this file]
       risk_factors: [specific risks identified for this file]
   mode: [mode from command]
+
+Task: Launch duplicate-code-analyzer
+Agent: coordinator-internal/duplicate-code-analyzer.md
+Prompt:
+  diff_analysis_summary:
+    high_risk_files: [list of file paths with risk scores]
+    patterns_detected: [list of patterns]
+    risk_surface: [summary of risk categories]
+  attack_vectors: [vectors for code-duplication]
+  file_refs:
+    - file_path: [path]
+      change_type: modified|added|deleted
+      hunks: [relevant diff hunks for this file]
+      risk_factors: [specific risks identified for this file]
+  mode: [mode from command]
 ```
 
 **Attacker assignments:**
@@ -198,6 +213,7 @@ Prompt:
 - `code-context-attacker` - Categories: `breaking-changes`, `dependency-violations`, `api-contract-changes`
 - `security-prober` - Categories: `security-vulnerabilities`, `input-validation`, `information-disclosure`
 - `change-scope-analyzer` - Categories: `scope-creep`, `unintended-side-effects`, `test-coverage-gaps`
+- `duplicate-code-analyzer` - Categories: `code-duplication`
 
 **Context filtering rules:**
 - Each attacker receives FILTERED context (NOT full diff)

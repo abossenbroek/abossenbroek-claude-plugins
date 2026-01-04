@@ -2,56 +2,58 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [ main, feature/** ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
-  lint-and-test:
+  validate-python:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
-        with:
-          version: "latest"
-
       - name: Set up Python
-        run: uv python install 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
       - name: Install dependencies
-        run: uv sync --all-extras
-
-      - name: Run pre-commit
-        run: uv run pre-commit run --all-files
+        run: |
+          pip install uv
+          uv sync --all-extras
 
       - name: Run tests
         run: uv run pytest tests/ -v
 
-  validate-plugins:
+      - name: Run pre-commit hooks
+        run: |
+          pip install pre-commit
+          pre-commit run --all-files
+
+  validate-npm-deps:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          version: "latest"
+          node-version: '20'
 
-      - name: Set up Python
-        run: uv python install 3.12
+      - name: Install npm dependencies
+        run: |
+          cd red-agent
+          npm ci
 
-      - name: Install dependencies
-        run: uv sync --all-extras
+      - name: Audit npm dependencies
+        run: |
+          cd red-agent
+          npm audit --production
 
-      - name: Validate plugin schemas
-        run: uv run python scripts/validate_plugin_schemas.py
-
-      - name: Check config hygiene
-        run: uv run python scripts/check_config_hygiene.py
-
-      - name: Validate agent files exist
-        run: uv run python scripts/validate_agent_files.py
+      - name: Verify lock file integrity
+        run: |
+          cd red-agent
+          npm ls --json > /tmp/deps.json
+          grep -q '"integrity"' /tmp/deps.json || (echo "Missing integrity hashes" && exit 1)

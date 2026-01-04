@@ -1,0 +1,17 @@
+{
+  "name": "red-agent-jscpd-deps",
+  "version": "1.0.0",
+  "description": "jscpd dependencies for red-agent duplicate code detection",
+  "private": true,
+  "dependencies": {
+    "jscpd": "4.0.5"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "scripts": {
+    "audit": "npm audit --production",
+    "verify-integrity": "npm ls --json | grep -q '\"integrity\"'"
+  }
+}

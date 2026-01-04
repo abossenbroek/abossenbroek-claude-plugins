@@ -28,6 +28,19 @@ Red Agent provides `/redteam` - a contrarian agent that systematically probes co
 
 The plugin includes a PostToolUse hook that validates agent outputs using Pydantic models. The hook uses `uv run --script` with inline dependencies, so validation "just works" without manual dependency installation.
 
+### Optional: jscpd (Duplicate Code Detection)
+
+For PR analysis with duplicate code detection:
+
+```bash
+cd red-agent/
+npm install
+```
+
+This installs [jscpd](https://github.com/kucherenko/jscpd) for detecting code duplication in PRs. If jscpd is not installed, the duplicate-code-analyzer will gracefully skip with a note in reports.
+
+**Security**: We use package-lock.json with SHA-512 integrity hashes, npm audit pre-commit hooks, and CI validation to protect against supply chain attacks.
+
 ## Usage
 
 ```bash
@@ -393,6 +406,59 @@ This PR introduces authentication changes with moderate risk...
 2. Implement proper error handling
 3. Add unit tests for edge cases
 ```
+
+## Documentation
+
+Comprehensive guides for using red-agent:
+
+### Getting Started
+- **[Usage Guide](./docs/usage-guide.md)** - Complete command reference and workflows
+  - All commands explained (`/redteam`, `/redteam-pr`, `/redteam-fix-orchestrator`)
+  - Analysis modes (quick, standard, deep)
+  - Best practices and workflows
+  - Troubleshooting
+
+### Deep Dives
+- **[Attack Taxonomy](./docs/attack-taxonomy.md)** - Understanding the 10x10 attack matrix
+  - 11 risk categories detailed
+  - 10 attack styles explained
+  - Finding examples and severity guidelines
+  - Mode-specific behavior
+
+- **[Fix Orchestrator](./docs/fix-orchestrator.md)** - Automated issue remediation
+  - Interactive vs GitHub mode
+  - Fix strategies by category
+  - Complexity levels and risk assessment
+  - Batch processing patterns
+
+### Integration
+- **[GitHub Integration](./docs/github-integration.md)** - CI/CD and automation
+  - Claude Code agent setup
+  - GitHub Actions workflows
+  - PR review automation
+  - Automated fix PRs
+  - Security best practices
+
+- **[Security Documentation](./docs/jscpd-security.md)** - npm dependency security
+  - Multi-layer security architecture
+  - MITM and supply chain protection
+  - Incident response procedures
+  - Monitoring and alerts
+
+### Quick Links
+
+**Common Tasks:**
+- [Run first analysis](./docs/usage-guide.md#basic-commands)
+- [Analyze a PR](./docs/usage-guide.md#pr-analysis)
+- [Fix issues automatically](./docs/fix-orchestrator.md#quick-start)
+- [Setup GitHub Actions](./docs/github-integration.md#github-actions-workflows)
+- [Understand findings](./docs/attack-taxonomy.md#risk-categories-detailed)
+
+**Troubleshooting:**
+- ["No findings detected"](./docs/usage-guide.md#no-findings-detected)
+- ["Too many findings"](./docs/usage-guide.md#too-many-findings)
+- ["jscpd not available"](./docs/usage-guide.md#jscpd-not-available)
+- [Security incident response](./docs/jscpd-security.md#incident-response)
 
 ## License
 

@@ -57,9 +57,10 @@ class TestEnums:
         assert len(Confidence) == 7
 
     def test_risk_category_names(self):
-        """Test all 10 risk categories exist."""
-        assert len(RiskCategoryName) == 10
+        """Test all 11 risk categories exist."""
+        assert len(RiskCategoryName) == 11
         assert RiskCategoryName.REASONING_FLAWS == "reasoning-flaws"
+        assert RiskCategoryName.CODE_DUPLICATION == "code-duplication"
 
     def test_analysis_modes(self):
         """Test analysis mode enum."""
