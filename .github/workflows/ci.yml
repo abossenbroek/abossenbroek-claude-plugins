@@ -18,7 +18,17 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install npm dependencies (for jscpd tests)
+        run: |
+          cd red-agent
+          npm ci
+
+      - name: Install Python dependencies
         run: |
           pip install uv
           uv sync --all-extras
@@ -55,5 +65,7 @@ jobs:
       - name: Verify lock file integrity
         run: |
           cd red-agent
-          npm ls --json > /tmp/deps.json
-          grep -q '"integrity"' /tmp/deps.json || (echo "Missing integrity hashes" && exit 1)
+          # Verify package-lock.json contains integrity hashes
+          grep -q '"integrity":' package-lock.json || (echo "Missing integrity hashes in package-lock.json" && exit 1)
+          # Verify jscpd is installed
+          test -f node_modules/.bin/jscpd || (echo "jscpd not installed" && exit 1)
